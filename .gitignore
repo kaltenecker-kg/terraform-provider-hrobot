@@ -1,0 +1,10 @@
+terraform-provider-hrobot
+*.exe
+*.test
+*.out
+.terraform/
+.terraform.lock.hcl
+.devenv/
+.direnv/
+.worktrees/
+dist/

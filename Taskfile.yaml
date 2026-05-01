@@ -1,0 +1,53 @@
+version: "3"
+
+vars:
+  BINARY: terraform-provider-hrobot
+  VERSION: '{{.VERSION | default "0.0.0-dev"}}'
+  # Local plugin directory layout for `terraform`/`tofu` dev overrides.
+  HOSTNAME: registry.terraform.io
+  NAMESPACE: kaltenecker-kg
+  NAME: hrobot
+  OS_ARCH:
+    sh: echo "$(go env GOOS)_$(go env GOARCH)"
+  INSTALL_DIR: '{{.HOME}}/.terraform.d/plugins/{{.HOSTNAME}}/{{.NAMESPACE}}/{{.NAME}}/{{.VERSION}}/{{.OS_ARCH}}'
+
+tasks:
+  default:
+    deps: [build]
+
+  tidy:
+    desc: Run go mod tidy.
+    cmds:
+      - go mod tidy
+
+  fmt:
+    desc: Format Go code via golangci-lint.
+    cmds:
+      - golangci-lint run --fix
+
+  lint:
+    desc: Run golangci-lint.
+    cmds:
+      - golangci-lint run
+
+  test:
+    desc: Run unit tests.
+    cmds:
+      - go test -v -cover ./...
+
+  build:
+    desc: Build the provider binary.
+    cmds:
+      - go build -ldflags "-X main.version={{.VERSION}}" -o {{.BINARY}} .
+
+  install:
+    desc: Build and install into the local Terraform plugin cache.
+    deps: [build]
+    cmds:
+      - mkdir -p "{{.INSTALL_DIR}}"
+      - mv {{.BINARY}} "{{.INSTALL_DIR}}/{{.BINARY}}_v{{.VERSION}}"
+
+  clean:
+    desc: Remove build artifacts.
+    cmds:
+      - rm -f {{.BINARY}}
