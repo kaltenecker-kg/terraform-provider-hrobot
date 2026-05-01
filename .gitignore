@@ -8,3 +8,4 @@ terraform-provider-hrobot
 .direnv/
 .worktrees/
 dist/
+node_modules/
