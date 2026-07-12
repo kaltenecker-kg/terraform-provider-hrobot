@@ -52,8 +52,9 @@ tasks:
 
   vulncheck:
     desc: Scan for known vulnerabilities in dependencies and reachable code.
+    # govulncheck is pinned by commit SHA for reproducibility; Renovate bumps it.
     cmds:
-      - go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - go run golang.org/x/vuln/cmd/govulncheck@19b0bb6a272792b9afa8a6983c3e9b9a1816947f ./... # v1.6.0
 
   check:
     desc: Run all quality gates (lint, vet, test, tidy-check, verify, vulncheck).
