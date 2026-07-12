@@ -32,8 +32,8 @@ jobs:
         id: op
         uses: 1password/load-secrets-action@860a5d856924d259f6dcc493575a0b1bb0ae2dde # v4.0.1
         with:
-          # Expose as step outputs only (not job-wide env vars), so the key is
-          # not in scope for the GoReleaser build step.
+          # Expose as step outputs only, so the key is not exposed as job-wide
+          # environment variables (GoReleaser still reaches it via the keyring).
           export-env: false
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
@@ -44,8 +44,12 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ steps.op.outputs.GPG_PRIVATE_KEY }}
         run: |
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          printf '%s\n' "$GPG_PRIVATE_KEY" | gpg --batch --import
           fpr="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')"
+          if [ -z "$fpr" ]; then
+            echo "error: could not extract signing key fingerprint" >&2
+            exit 1
+          fi
           echo "fingerprint=$fpr" >> "$GITHUB_OUTPUT"
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
