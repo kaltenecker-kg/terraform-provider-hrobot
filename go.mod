@@ -1,10 +1,10 @@
 module github.com/kaltenecker-kg/terraform-provider-hrobot
 
-go 1.26.5
+go 1.26
 
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
-	github.com/kaltenecker-kg/hrobot-go v0.0.0
+	github.com/kaltenecker-kg/hrobot-go v1.0.0
 )
 
 require (
@@ -31,5 +31,3 @@ require (
 	google.golang.org/grpc v1.82.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
-
-replace github.com/kaltenecker-kg/hrobot-go => ../hrobot-go

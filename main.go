@@ -10,6 +10,11 @@ import (
 	"github.com/kaltenecker-kg/terraform-provider-hrobot/internal/provider"
 )
 
+// Generate the registry documentation under docs/ from the provider schema and
+// the examples/ directory. tfplugindocs is pinned to a release tag that Renovate
+// bumps; run via `task docs`.
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0 generate --provider-name hrobot
+
 // version is set at build time via -ldflags.
 var version = "dev"
 

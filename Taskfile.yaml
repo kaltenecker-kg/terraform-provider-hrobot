@@ -56,6 +56,21 @@ tasks:
     cmds:
       - go run golang.org/x/vuln/cmd/govulncheck@19b0bb6a272792b9afa8a6983c3e9b9a1816947f ./... # v1.6.0
 
+  docs:
+    desc: Generate registry documentation under docs/ from the provider schema.
+    # tfplugindocs extracts the schema via the Terraform CLI (a dev-time tool
+    # only; downloaded automatically when absent). The pinned version lives in
+    # the //go:generate directive in main.go.
+    cmds:
+      - go generate ./...
+
+  release-snapshot:
+    desc: Build an unpublished snapshot release locally to validate goreleaser.
+    # Signing is skipped so the snapshot builds without the GPG signing key that
+    # only the release workflow holds.
+    cmds:
+      - goreleaser release --snapshot --clean --skip=sign
+
   check:
     desc: Run all quality gates (lint, vet, test, tidy-check, verify, vulncheck).
     cmds:
