@@ -1,10 +1,7 @@
 name: Release
 
-# Publishes a GPG-signed release whose artifacts the Terraform/OpenTofu
-# registry ingests. Requires two repository secrets:
-#   GPG_PRIVATE_KEY — ASCII-armored private key whose public half is registered
-#                     with the provider namespace in the registry
-#   PASSPHRASE      — passphrase for that key
+# Builds and publishes a GPG-signed release for the Terraform/OpenTofu registry
+# on a v* tag. Signing secrets come from the protected `release` environment.
 on:
   push:
     tags:
@@ -17,6 +14,9 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Protected environment: restrict to v* tags and require a reviewer so the
+    # service-account token is only reachable from an approved release run.
+    environment: release
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -28,17 +28,33 @@ jobs:
           # artifacts include standard-library security fixes.
           check-latest: true
           cache: true
-      - name: Import GPG key
-        id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
+      - name: Load signing key from 1Password
+        id: op
+        uses: 1password/load-secrets-action@860a5d856924d259f6dcc493575a0b1bb0ae2dde # v4.0.1
         with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.PASSPHRASE }}
+          # Expose as step outputs only (not job-wide env vars), so the key is
+          # not in scope for the GoReleaser build step.
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          GPG_PRIVATE_KEY: "op://Release Signing/hrobot-provider-release-signing/ci_private_subkey"
+          PASSPHRASE: "op://Release Signing/hrobot-provider-release-signing/passphrase"
+      - name: Import signing key
+        id: gpg
+        env:
+          GPG_PRIVATE_KEY: ${{ steps.op.outputs.GPG_PRIVATE_KEY }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          fpr="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')"
+          echo "fingerprint=$fpr" >> "$GITHUB_OUTPUT"
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           version: '~> v2'
           args: release --clean
         env:
-          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          # GoReleaser signs SHA256SUMS with gpg; the passphrase is fed to gpg on
+          # stdin (see .goreleaser.yml), never on the command line.
+          GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
+          GPG_PASSWORD: ${{ steps.op.outputs.PASSPHRASE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
