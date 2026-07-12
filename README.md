@@ -10,12 +10,13 @@ library.
 ## Configuration
 
 ```hcl
-provider "hrobot" {
-  username = var.hrobot_username   # or HROBOT_USERNAME
-  password = var.hrobot_password   # or HROBOT_PASSWORD
-  # base_url = "..."               # or HROBOT_BASE_URL; defaults to the library default
-}
+# username, password, and base_url fall back to the HROBOT_USERNAME,
+# HROBOT_PASSWORD, and HROBOT_BASE_URL environment variables when omitted.
+provider "hrobot" {}
 ```
+
+To set the credentials in configuration instead, declare `variable` blocks for
+them and assign `username`/`password` on the provider.
 
 ## Data sources
 

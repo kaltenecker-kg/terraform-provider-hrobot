@@ -100,6 +100,7 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
+#!/usr/bin/env bash
 # Firewall configuration is imported by the server number.
 terraform import hrobot_firewall.example 1234567
 ```
