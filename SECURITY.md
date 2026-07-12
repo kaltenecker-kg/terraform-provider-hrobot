@@ -2,7 +2,7 @@
 
 ## Verifying release signatures
 
-Releases are signed with an OpenPGP key certified by the **Kaltenecker KG root**.
+Releases are signed with an OpenPGP key certified by the **Kaltenecker KG (KKG) root**.
 
 **Current signing key**
 
