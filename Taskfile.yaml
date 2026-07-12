@@ -30,10 +30,40 @@ tasks:
     cmds:
       - golangci-lint run
 
-  test:
-    desc: Run unit tests.
+  vet:
+    desc: Run go vet.
     cmds:
-      - go test -v -cover ./...
+      - go vet ./...
+
+  test:
+    desc: Run unit tests with the race detector.
+    cmds:
+      - go test -v -race -cover -timeout=180s ./...
+
+  tidy-check:
+    desc: Fail if go.mod/go.sum are not tidy.
+    cmds:
+      - go mod tidy -diff
+
+  verify:
+    desc: Verify module dependencies against go.sum.
+    cmds:
+      - go mod verify
+
+  vulncheck:
+    desc: Scan for known vulnerabilities in dependencies and reachable code.
+    cmds:
+      - go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  check:
+    desc: Run all quality gates (lint, vet, test, tidy-check, verify, vulncheck).
+    cmds:
+      - task: lint
+      - task: vet
+      - task: test
+      - task: tidy-check
+      - task: verify
+      - task: vulncheck
 
   build:
     desc: Build the provider binary.
