@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+DOCS:
+
+- Add a "Getting started" guide (provider install, authentication, first configuration, import)
+- Add the missing attribute descriptions on the `hrobot_server` / `hrobot_servers` data sources;
+  every attribute across the provider is now documented and the docs pass `tfplugindocs validate`
+
 ## 1.2.0 - 2026-07-12
 
 FEATURES:

@@ -32,12 +32,12 @@ output "server_names" {
 
 Read-Only:
 
-- `cancelled` (Boolean)
-- `dc` (String)
-- `id` (Number)
-- `ips` (List of String)
-- `paid_until` (String)
-- `product` (String)
-- `server_ip` (String)
-- `server_name` (String)
-- `status` (String)
+- `cancelled` (Boolean) Whether the server is cancelled.
+- `dc` (String) Datacenter the server is located in.
+- `id` (Number) Server number.
+- `ips` (List of String) All single IP addresses assigned to the server.
+- `paid_until` (String) Date the server is paid until.
+- `product` (String) Product name (e.g. AX41-NVMe).
+- `server_ip` (String) Main (primary) IP address of the server.
+- `server_name` (String) Server name set in Robot.
+- `status` (String) Server status (ready, in process, or cancelled).
