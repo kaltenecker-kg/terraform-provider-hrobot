@@ -65,4 +65,5 @@ release:
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
 
 changelog:
+  # Release body is set from CHANGELOG.md via --release-notes in the workflow.
   disable: true

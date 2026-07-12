@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
           # Use the latest patch of the Go toolchain.
@@ -61,11 +61,39 @@ jobs:
           fi
           echo "fingerprint=$fpr" >> "$GITHUB_OUTPUT"   # primary fpr; gpg picks the signing subkey
 
+      - name: Prepare release notes
+        id: notes
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          ver="${VERSION#v}"
+          out="${RUNNER_TEMP}/release-notes.md"
+          # Extract this version's section from CHANGELOG.md (heading like
+          # "## 1.2.3", "## [1.2.3]", or "## v1.2.3"), up to the next "## ".
+          awk -v ver="$ver" '
+            /^##[[:space:]]/ {
+              if (seen) exit
+              h = $0; sub(/^##[[:space:]]+/, "", h); gsub(/[][]/, "", h); sub(/^[vV]/, "", h)
+              split(h, a, /[[:space:]]+/)
+              if (a[1] == ver) { seen = 1; next }
+              next
+            }
+            seen { print }
+          ' CHANGELOG.md | sed '/./,$!d' > "$out"
+          # Gate: fall back to minimal notes when the tag has no CHANGELOG entry.
+          if [ ! -s "$out" ]; then
+            echo "no CHANGELOG.md section for ${ver}; using fallback notes" >&2
+            printf 'Release %s. See CHANGELOG.md.\n' "$VERSION" > "$out"
+          fi
+          echo "file=$out" >> "$GITHUB_OUTPUT"
+          echo "----- release notes -----"; cat "$out"
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           version: '~> v2'
-          args: release --clean
+          args: release --clean --release-notes=${{ steps.notes.outputs.file }}
         env:
           # Passphrase reaches gpg via stdin (see .goreleaser.yml).
           GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
