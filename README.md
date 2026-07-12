@@ -70,12 +70,10 @@ changes, and commit the result.
 
 Pushing a `vX.Y.Z` tag runs the [release workflow](.github/workflows/release.yml),
 which builds cross-platform binaries with GoReleaser and publishes a GPG-signed
-GitHub release in the layout the Terraform/OpenTofu registry ingests. The
-workflow requires two repository secrets:
+GitHub release in the layout the Terraform/OpenTofu registry ingests.
 
-- `GPG_PRIVATE_KEY` — ASCII-armored signing key whose public half is registered
-  with the provider namespace in the registry.
-- `PASSPHRASE` — passphrase for that key.
+Release signing keys and their setup are managed out-of-band and documented
+privately.
 
 ## Scope
 

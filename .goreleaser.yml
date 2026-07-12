@@ -43,10 +43,17 @@ checksum:
 
 signs:
   - artifacts: checksum
+    # Feed the passphrase to gpg on stdin so it never appears on the command
+    # line or in the process list.
+    stdin: '{{ .Env.GPG_PASSWORD }}'
     args:
-      # --batch keeps gpg non-interactive in CI; the fingerprint selects the
-      # signing key imported from the GPG_PRIVATE_KEY / PASSPHRASE secrets.
+      # --batch + loopback keep gpg non-interactive (no gpg-agent/pinentry); the
+      # fingerprint selects the signing key imported in the workflow.
       - '--batch'
+      - '--pinentry-mode'
+      - 'loopback'
+      - '--passphrase-fd'
+      - '0'
       - '--local-user'
       - '{{ .Env.GPG_FINGERPRINT }}'
       - '--output'
