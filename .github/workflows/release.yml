@@ -1,0 +1,77 @@
+name: Release
+
+# Builds and publishes a GPG-signed release for the Terraform/OpenTofu registry
+# on a v* tag. Signing secrets come from the protected `release` environment.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Runs under the protected `release` environment.
+    environment: release
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          # Use the latest patch of the Go toolchain.
+          check-latest: true
+          cache: true
+
+      - name: Load signing key from 1Password
+        id: op
+        uses: 1password/load-secrets-action@860a5d856924d259f6dcc493575a0b1bb0ae2dde # v4.0.1
+        with:
+          # Expose as step outputs, not job-wide env.
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          # op:// references (resolved by load-secrets-action); subkey is single-line base64.
+          GPG_SUBKEY_B64: ${{ secrets.OP_GPG_SUBKEY_B64_REF }}
+          GPG_PASSPHRASE: ${{ secrets.OP_GPG_PASSPHRASE_REF }}
+
+      - name: Import signing subkey
+        id: gpg
+        env:
+          GPG_SUBKEY_B64: ${{ steps.op.outputs.GPG_SUBKEY_B64 }}
+        run: |
+          set -euo pipefail
+          GNUPGHOME="$(mktemp -d)"; chmod 700 "$GNUPGHOME"
+          export GNUPGHOME
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+          printf 'allow-loopback-pinentry\n'       > "$GNUPGHOME/gpg-agent.conf"
+          printf 'pinentry-mode loopback\nbatch\n'  > "$GNUPGHOME/gpg.conf"
+          gpgconf --kill gpg-agent || true
+          # Decode base64, then import.
+          printf '%s' "$GPG_SUBKEY_B64" | base64 -d | gpg --batch --import
+          gpg --list-secret-keys --keyid-format=long
+          fpr="$(gpg --list-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')"
+          if [ -z "$fpr" ]; then
+            echo "error: could not extract signing key fingerprint" >&2
+            exit 1
+          fi
+          echo "fingerprint=$fpr" >> "$GITHUB_OUTPUT"   # primary fpr; gpg picks the signing subkey
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: '~> v2'
+          args: release --clean
+        env:
+          # Passphrase reaches gpg via stdin (see .goreleaser.yml).
+          GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
+          GPG_PASSWORD: ${{ steps.op.outputs.GPG_PASSPHRASE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wipe keyring
+        if: always()
+        run: rm -rf "${GNUPGHOME:-/nonexistent}" || true
