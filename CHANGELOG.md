@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0 - 2026-07-12
+
 FEATURES:
 
 - **provider**: Configure via the `username`, `password`, and `base_url`
