@@ -4,6 +4,10 @@
 
 FEATURES:
 
+- **resource/hrobot_ssh_key**: Manage an SSH key (create, rename, delete; import by fingerprint)
+- **resource/hrobot_rdns**: Manage the reverse DNS (PTR) entry for an IP (import by IP)
+- **resource/hrobot_vswitch**: Manage a vSwitch and its attached servers (import by ID)
+- **resource/hrobot_failover_ip**: Route a failover IP to a server (import by IP)
 - **data-source/hrobot_ssh_key**, **hrobot_ssh_keys**: Look up an SSH key by fingerprint, or list all keys
 - **data-source/hrobot_ip**, **hrobot_ips**: Look up a single IP (traffic-warning and separate-MAC state), or list all
 - **data-source/hrobot_subnet**, **hrobot_subnets**: Look up a subnet by network address, or list all

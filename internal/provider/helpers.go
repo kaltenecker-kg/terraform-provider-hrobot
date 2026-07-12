@@ -1,14 +1,23 @@
 package provider
 
 import (
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/kaltenecker-kg/hrobot-go"
 )
+
+// isNotFound reports whether err is an hrobot API error with HTTP status 404,
+// so Read can drop a resource that was deleted outside of Terraform.
+func isNotFound(err error) bool {
+	var e *hrobot.Error
+	return errors.As(err, &e) && e.Status == http.StatusNotFound
+}
 
 // ipToString renders a net.IP as a Terraform string, mapping the empty/nil IP to
 // a null value (rather than the literal "<nil>").

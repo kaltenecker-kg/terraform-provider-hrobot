@@ -42,7 +42,16 @@ func TestProvider_Schema(t *testing.T) {
 			t.Errorf("data source %q not registered", n)
 		}
 	}
-	if _, ok := resp.ResourceSchemas["hrobot_firewall"]; !ok {
-		t.Errorf("resource hrobot_firewall not registered")
+	wantResources := []string{
+		"hrobot_firewall",
+		"hrobot_ssh_key",
+		"hrobot_rdns",
+		"hrobot_vswitch",
+		"hrobot_failover_ip",
+	}
+	for _, n := range wantResources {
+		if _, ok := resp.ResourceSchemas[n]; !ok {
+			t.Errorf("resource %q not registered", n)
+		}
 	}
 }

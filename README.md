@@ -40,6 +40,12 @@ them and assign `username`/`password` on the provider.
   server. Rule order is preserved (Hetzner evaluates top-down). The API caps
   inbound rules at **10**; exceeding that returns `FIREWALL_RULE_LIMIT_EXCEEDED`.
   Import with the server number: `terraform import hrobot_firewall.example 1234567`.
+- `hrobot_ssh_key` — manage an SSH key (create, rename, delete). Import by fingerprint.
+- `hrobot_rdns` — manage the reverse DNS (PTR) entry for an IP. Import by IP.
+- `hrobot_vswitch` — manage a vSwitch and its attached servers (by server number).
+  Import by vSwitch ID.
+- `hrobot_failover_ip` — route a failover IP to a server (the IP is ordered
+  out-of-band; destroying the resource unroutes it). Import by failover IP.
 
 Reference documentation for every attribute lives under [`docs/`](docs/), and
 runnable configuration lives under [`examples/`](examples/).
