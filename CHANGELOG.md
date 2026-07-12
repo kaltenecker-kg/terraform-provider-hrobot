@@ -4,6 +4,9 @@
 
 FEATURES:
 
+- **resource/hrobot_storagebox_subaccount**: Manage a Storage Box sub-account; the generated password is exposed once as a sensitive attribute (import by `<storagebox_id>/<username>`)
+- **resource/hrobot_storagebox_snapshot**: Take and manage a manual Storage Box snapshot (import by `<storagebox_id>/<name>`)
+- **resource/hrobot_storagebox_snapshot_plan**: Manage the automatic snapshot plan, one per box; destroying disables it (import by Storage Box ID)
 - **resource/hrobot_ssh_key**: Manage an SSH key (create, rename, delete; import by fingerprint)
 - **resource/hrobot_rdns**: Manage the reverse DNS (PTR) entry for an IP (import by IP)
 - **resource/hrobot_vswitch**: Manage a vSwitch and its attached servers (import by ID)

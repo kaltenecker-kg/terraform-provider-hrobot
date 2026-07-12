@@ -48,6 +48,9 @@ func TestProvider_Schema(t *testing.T) {
 		"hrobot_rdns",
 		"hrobot_vswitch",
 		"hrobot_failover_ip",
+		"hrobot_storagebox_subaccount",
+		"hrobot_storagebox_snapshot",
+		"hrobot_storagebox_snapshot_plan",
 	}
 	for _, n := range wantResources {
 		if _, ok := resp.ResourceSchemas[n]; !ok {
