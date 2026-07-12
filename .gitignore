@@ -6,6 +6,7 @@ terraform-provider-hrobot
 .terraform.lock.hcl
 .devenv/
 .direnv/
+.envrc
 .worktrees/
 dist/
 node_modules/

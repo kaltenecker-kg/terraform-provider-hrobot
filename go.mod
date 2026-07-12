@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
-	github.com/kaltenecker-kg/hrobot-go v1.0.0
+	github.com/kaltenecker-kg/hrobot-go v1.1.0
 )
 
 require (
