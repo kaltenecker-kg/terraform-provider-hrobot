@@ -128,6 +128,10 @@ func (p *hrobotProvider) DataSources(_ context.Context) []func() datasource.Data
 func (p *hrobotProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewFirewallResource,
+		NewSSHKeyResource,
+		NewRDNSResource,
+		NewVSwitchResource,
+		NewFailoverIPResource,
 	}
 }
 
