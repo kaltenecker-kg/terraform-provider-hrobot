@@ -1,0 +1,37 @@
+name: Copilot review
+
+# Copilot code review is requested here rather than via a repository ruleset so
+# it only runs for contributors. A ruleset applies to every pull request author;
+# this workflow gates on author association so external and first-time pull
+# requests are not sent to Copilot.
+#
+# pull_request_target runs in the base-repo context (so the token can request a
+# reviewer even on fork pull requests). It is safe here because the job never
+# checks out or executes pull-request code — it only calls the reviewers API.
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  request-copilot-review:
+    name: Request Copilot review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Contributors only: org owners/members, repo collaborators, or authors with
+    # a previously merged contribution. Excludes FIRST_TIME_CONTRIBUTOR, NONE,
+    # and bot authors (e.g. Renovate).
+    if: >-
+      github.event.pull_request.user.type != 'Bot' &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR", "CONTRIBUTOR"]'), github.event.pull_request.author_association)
+    steps:
+      - name: Request review from Copilot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/requested_reviewers" \
+            -f "reviewers[]=Copilot"

@@ -33,6 +33,18 @@
       "depNameTemplate": "golang.org/x/vuln",
       "packageNameTemplate": "golang/vuln",
       "datasourceTemplate": "github-tags"
+    },
+    {
+      "customType": "regex",
+      "description": "Bump the tfplugindocs version pinned in the go:generate directive.",
+      "managerFilePatterns": [
+        "/^main\\.go$/"
+      ],
+      "matchStrings": [
+        "tfplugindocs@(?<currentValue>v[0-9][^\\s]+)"
+      ],
+      "depNameTemplate": "hashicorp/terraform-plugin-docs",
+      "datasourceTemplate": "github-releases"
     }
   ]
 }
