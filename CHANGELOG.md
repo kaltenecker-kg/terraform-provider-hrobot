@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.0 - 2026-07-12
+
 FEATURES:
 
 - **resource/hrobot_storagebox_subaccount**: Manage a Storage Box sub-account; the generated password is exposed once as a sensitive attribute (import by `<storagebox_id>/<username>`)
