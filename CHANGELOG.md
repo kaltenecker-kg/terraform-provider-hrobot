@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.1 - 2026-07-12
+
 DOCS:
 
 - Add a "Getting started" guide (provider install, authentication, first configuration, import)
