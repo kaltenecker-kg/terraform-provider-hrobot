@@ -105,6 +105,23 @@ func (p *hrobotProvider) DataSources(_ context.Context) []func() datasource.Data
 	return []func() datasource.DataSource{
 		NewServerDataSource,
 		NewServersDataSource,
+		NewSSHKeyDataSource,
+		NewSSHKeysDataSource,
+		NewRDNSDataSource,
+		NewFailoverDataSource,
+		NewFailoversDataSource,
+		NewVSwitchDataSource,
+		NewVSwitchesDataSource,
+		NewIPDataSource,
+		NewIPsDataSource,
+		NewSubnetDataSource,
+		NewSubnetsDataSource,
+		NewStorageBoxDataSource,
+		NewStorageBoxesDataSource,
+		NewStorageBoxSubAccountsDataSource,
+		NewStorageBoxSnapshotsDataSource,
+		NewBootDataSource,
+		NewTrafficDataSource,
 	}
 }
 
