@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+IMPROVEMENTS:
+
+- **provider**: Identify the provider and client library in the API User-Agent via hrobot-go's `WithApplication`,
+  reported as `terraform-provider-hrobot/<version> hrobot-go/<version>`
+
+DEPENDENCIES:
+
+- Bump `hrobot-go` from v1.1.0 to v1.2.0
+
 ## 1.0.0 - 2026-07-12
 
 FEATURES:

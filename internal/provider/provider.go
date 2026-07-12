@@ -90,7 +90,7 @@ func (p *hrobotProvider) Configure(ctx context.Context, req provider.ConfigureRe
 	}
 
 	opts := []hrobot.ClientOption{
-		hrobot.WithUserAgent("terraform-provider-hrobot/" + p.version),
+		hrobot.WithApplication("terraform-provider-hrobot", p.version),
 	}
 	if baseURL != "" {
 		opts = append(opts, hrobot.WithBaseURL(baseURL))
