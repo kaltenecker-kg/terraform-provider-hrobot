@@ -46,6 +46,13 @@ them and assign `username`/`password` on the provider.
   Import by vSwitch ID.
 - `hrobot_failover_ip` — route a failover IP to a server (the IP is ordered
   out-of-band; destroying the resource unroutes it). Import by failover IP.
+- `hrobot_storagebox_subaccount` — manage a Storage Box sub-account (the box is
+  ordered out-of-band). The generated password is exposed once as a sensitive
+  attribute. Import by `<storagebox_id>/<username>`.
+- `hrobot_storagebox_snapshot` — take and manage a manual Storage Box snapshot.
+  Import by `<storagebox_id>/<name>`.
+- `hrobot_storagebox_snapshot_plan` — manage the automatic snapshot plan (one per
+  box; destroying disables it). Import by Storage Box ID.
 
 Reference documentation for every attribute lives under [`docs/`](docs/), and
 runnable configuration lives under [`examples/`](examples/).

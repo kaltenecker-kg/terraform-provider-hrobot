@@ -132,6 +132,9 @@ func (p *hrobotProvider) Resources(_ context.Context) []func() resource.Resource
 		NewRDNSResource,
 		NewVSwitchResource,
 		NewFailoverIPResource,
+		NewStorageBoxSubAccountResource,
+		NewStorageBoxSnapshotResource,
+		NewStorageBoxSnapshotPlanResource,
 	}
 }
 
