@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.0 - 2026-07-12
+
 IMPROVEMENTS:
 
 - **provider**: Identify the provider and client library in the API User-Agent via hrobot-go's `WithApplication`,
