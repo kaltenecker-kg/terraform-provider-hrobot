@@ -192,10 +192,17 @@ func (r *firewallResource) ImportState(ctx context.Context, req resource.ImportS
 func (r *firewallResource) apply(ctx context.Context, plan *firewallModel, diags *diag.Diagnostics, state *tfsdk.State) {
 	id := hrobot.ServerID(plan.ServerNumber.ValueInt64())
 
+	// status is Required and filter_ipv6/whitelist_hos are Computed with static
+	// defaults, so all three always hold a known value here. UpdateConfig takes
+	// pointers to distinguish "unset" from zero, so take addresses of locals.
+	status := hrobot.FirewallStatus(plan.Status.ValueString())
+	filterIPv6 := plan.FilterIPv6.ValueBool()
+	whitelistHOS := plan.WhitelistHOS.ValueBool()
+
 	cfg := hrobot.UpdateConfig{
-		Status:       hrobot.FirewallStatus(plan.Status.ValueString()),
-		FilterIPv6:   plan.FilterIPv6.ValueBool(),
-		WhitelistHOS: plan.WhitelistHOS.ValueBool(),
+		Status:       &status,
+		FilterIPv6:   &filterIPv6,
+		WhitelistHOS: &whitelistHOS,
 		Rules: hrobot.FirewallRules{
 			Input:  toAPIRules(plan.InputRules),
 			Output: toAPIRules(plan.OutputRules),
