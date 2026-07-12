@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+FEATURES:
+
+- **data-source/hrobot_ssh_key**, **hrobot_ssh_keys**: Look up an SSH key by fingerprint, or list all keys
+- **data-source/hrobot_ip**, **hrobot_ips**: Look up a single IP (traffic-warning and separate-MAC state), or list all
+- **data-source/hrobot_subnet**, **hrobot_subnets**: Look up a subnet by network address, or list all
+- **data-source/hrobot_failover**, **hrobot_failovers**: Look up a failover IP and its routing target, or list all
+- **data-source/hrobot_vswitch**, **hrobot_vswitches**: Look up a vSwitch (with attached servers/subnets), or list all
+- **data-source/hrobot_storagebox**, **hrobot_storageboxes**: Look up a Storage Box, or list all
+- **data-source/hrobot_storagebox_subaccounts**, **hrobot_storagebox_snapshots**: List a Storage Box's sub-accounts and snapshots
+- **data-source/hrobot_rdns**: Look up the reverse DNS (PTR) entry for an IP
+- **data-source/hrobot_boot**: Read a server's boot configuration
+- **data-source/hrobot_traffic**: Query traffic statistics for an IP over a time range
+
 ## 1.1.0 - 2026-07-12
 
 IMPROVEMENTS:

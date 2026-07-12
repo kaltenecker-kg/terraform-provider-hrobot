@@ -20,8 +20,19 @@ them and assign `username`/`password` on the provider.
 
 ## Data sources
 
-- `hrobot_server` — look up a single server by `id` (server number).
-- `hrobot_servers` — list all servers on the account.
+- `hrobot_server` / `hrobot_servers` — a single server (by number) or all servers.
+- `hrobot_ssh_key` / `hrobot_ssh_keys` — a single SSH key (by fingerprint) or all keys.
+- `hrobot_ip` / `hrobot_ips` — a single IP (by address) or all single IPs, with
+  traffic-warning and separate-MAC state.
+- `hrobot_subnet` / `hrobot_subnets` — a single subnet (by network address) or all subnets.
+- `hrobot_failover` / `hrobot_failovers` — a failover IP and its current routing target.
+- `hrobot_vswitch` / `hrobot_vswitches` — a vSwitch (with attached servers/subnets) or the summary list.
+- `hrobot_storagebox` / `hrobot_storageboxes` — a Storage Box or all Storage Boxes.
+- `hrobot_storagebox_subaccounts` / `hrobot_storagebox_snapshots` — sub-accounts and
+  snapshots of a Storage Box.
+- `hrobot_rdns` — the reverse DNS (PTR) entry for an IP.
+- `hrobot_boot` — the current boot configuration of a server (rescue/linux/vnc/windows/plesk/cpanel).
+- `hrobot_traffic` — traffic statistics for an IP over a time range.
 
 ## Resources
 
@@ -78,3 +89,8 @@ privately.
 ## Scope
 
 Ordering, auction, and cancellation endpoints are intentionally out of scope.
+
+One-shot actions — server reset, Wake-on-LAN, and boot activation
+(rescue/linux/vnc/windows) — do not fit Terraform's declarative model and are not
+exposed as resources. Boot state is readable via the `hrobot_boot` data source;
+use the `hrobot-go` client directly for the actions themselves.
