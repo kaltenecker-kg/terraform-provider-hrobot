@@ -24,10 +24,11 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-          # Build release binaries with the latest 1.26.x patch so shipped
-          # artifacts include standard-library security fixes.
+          # Build release binaries with the latest patch so shipped artifacts
+          # include standard-library security fixes.
           check-latest: true
           cache: true
+
       - name: Load signing key from 1Password
         id: op
         uses: 1password/load-secrets-action@860a5d856924d259f6dcc493575a0b1bb0ae2dde # v4.0.1
@@ -37,20 +38,34 @@ jobs:
           export-env: false
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          GPG_PRIVATE_KEY: "op://Release Signing/hrobot-provider-release-signing/ci_private_subkey"
-          PASSPHRASE: "op://Release Signing/hrobot-provider-release-signing/passphrase"
-      - name: Import signing key
+          # The field is `ci_private_subkey_b64` — single-line BASE64. It is stored base64
+          # because load-secrets-action strips newlines from some field types, which would
+          # corrupt a raw armored key. Decode before importing (next step).
+          GPG_SUBKEY_B64: "op://Release Signing - hrobot/hrobot-provider-release-signing/ci_private_subkey_b64"
+          GPG_PASSPHRASE: "op://Release Signing - hrobot/hrobot-provider-release-signing/passphrase"
+
+      - name: Import signing subkey
         id: gpg
         env:
-          GPG_PRIVATE_KEY: ${{ steps.op.outputs.GPG_PRIVATE_KEY }}
+          GPG_SUBKEY_B64: ${{ steps.op.outputs.GPG_SUBKEY_B64 }}
         run: |
-          printf '%s\n' "$GPG_PRIVATE_KEY" | gpg --batch --import
-          fpr="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')"
+          set -euo pipefail
+          GNUPGHOME="$(mktemp -d)"; chmod 700 "$GNUPGHOME"
+          export GNUPGHOME
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+          printf 'allow-loopback-pinentry\n'       > "$GNUPGHOME/gpg-agent.conf"
+          printf 'pinentry-mode loopback\nbatch\n'  > "$GNUPGHOME/gpg.conf"
+          gpgconf --kill gpg-agent || true
+          # base64 -d FIRST, then import. Subkey-only export: expect `sec#` (stub primary) + `ssb`.
+          printf '%s' "$GPG_SUBKEY_B64" | base64 -d | gpg --batch --import
+          gpg --list-secret-keys --keyid-format=long
+          fpr="$(gpg --list-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')"
           if [ -z "$fpr" ]; then
             echo "error: could not extract signing key fingerprint" >&2
             exit 1
           fi
-          echo "fingerprint=$fpr" >> "$GITHUB_OUTPUT"
+          echo "fingerprint=$fpr" >> "$GITHUB_OUTPUT"   # primary fpr; gpg selects the [S] subkey
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
@@ -60,5 +75,9 @@ jobs:
           # GoReleaser signs SHA256SUMS with gpg; the passphrase is fed to gpg on
           # stdin (see .goreleaser.yml), never on the command line.
           GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
-          GPG_PASSWORD: ${{ steps.op.outputs.PASSPHRASE }}
+          GPG_PASSWORD: ${{ steps.op.outputs.GPG_PASSPHRASE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wipe keyring
+        if: always()
+        run: rm -rf "${GNUPGHOME:-/nonexistent}" || true
