@@ -8,7 +8,7 @@ import (
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 
-	"github.com/kaltenecker-kg/hrobot-go"
+	"github.com/kaltenecker-kg/hrobot-go/v2"
 )
 
 func rsSchema(t *testing.T, r resource.Resource) rschema.Schema {

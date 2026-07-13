@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+DEPENDENCIES:
+
+- Bump `hrobot-go` from v1.2.0 to v2.0.1 (module path `github.com/kaltenecker-kg/hrobot-go/v2`). No provider-facing
+  changes: the removed `GetWrappedList` and the retyped `Server.LinkedStorageBox` were not used
+
 ## 1.2.1 - 2026-07-12
 
 DOCS:

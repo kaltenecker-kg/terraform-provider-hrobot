@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/kaltenecker-kg/hrobot-go"
+	"github.com/kaltenecker-kg/hrobot-go/v2"
 )
 
 var (

@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/kaltenecker-kg/hrobot-go"
+	"github.com/kaltenecker-kg/hrobot-go/v2"
 )
 
 var (
