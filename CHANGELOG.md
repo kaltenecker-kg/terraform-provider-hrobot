@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.2 - 2026-07-13
+
 DEPENDENCIES:
 
 - Bump `hrobot-go` from v1.2.0 to v2.0.1 (module path `github.com/kaltenecker-kg/hrobot-go/v2`). No provider-facing
