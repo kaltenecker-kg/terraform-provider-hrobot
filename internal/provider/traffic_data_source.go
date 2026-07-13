@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/kaltenecker-kg/hrobot-go"
+	"github.com/kaltenecker-kg/hrobot-go/v2"
 )
 
 var (

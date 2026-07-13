@@ -3,7 +3,7 @@ package provider
 import (
 	"testing"
 
-	"github.com/kaltenecker-kg/hrobot-go"
+	"github.com/kaltenecker-kg/hrobot-go/v2"
 )
 
 func TestSetSubAccountResourceModel(t *testing.T) {
