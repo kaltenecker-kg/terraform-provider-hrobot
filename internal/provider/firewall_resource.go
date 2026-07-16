@@ -109,7 +109,7 @@ func (r *firewallResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"output_rule": schema.ListNestedAttribute{
 				Optional:     true,
-				Description:  "Outbound rules, evaluated top to bottom.",
+				Description:  "Outbound rules, evaluated top to bottom. Hetzner may store rules without `ip_version` expanded into separate ipv4 and ipv6 entries; the provider treats that expanded form as equal to the configured rules.",
 				NestedObject: schema.NestedAttributeObject{Attributes: ruleAttrs},
 			},
 		},
@@ -149,7 +149,10 @@ func (r *firewallResource) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("hrobot firewall read failed", err.Error())
 		return
 	}
+	inputRules, outputRules := reconcileRules(&state, cfg.Rules)
 	setFirewallModel(&state, cfg)
+	state.InputRules = inputRules
+	state.OutputRules = outputRules
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -218,15 +221,42 @@ func (r *firewallResource) apply(ctx context.Context, plan *firewallModel, diags
 		return
 	}
 
-	// Re-fetch after the firewall settles so state reflects API normalization.
+	// Re-fetch after the firewall settles, but only for computed attributes.
+	// input_rule/output_rule (and the other config attributes) must keep
+	// their planned values in state: they are not Computed, so Terraform
+	// requires the applied value to match the plan exactly, while the API
+	// may return a normalized ruleset (version-less rules expanded into
+	// separate ipv4/ipv6 entries).
 	final, err := r.client.Firewall.Get(ctx, id)
 	if err != nil {
 		diags.AddError("hrobot firewall re-read failed", err.Error())
 		return
 	}
+	if !final.Rules.Equivalent(cfg.Rules) {
+		diags.AddWarning(
+			"hrobot firewall rules diverged after apply",
+			"the api reports a ruleset that differs materially from the applied configuration; the next plan will show it as drift",
+		)
+	}
 
-	setFirewallModel(plan, final)
+	plan.ID = types.StringValue(strconv.Itoa(final.ServerNumber))
+	plan.Port = types.StringValue(final.Port)
 	diags.Append(state.Set(ctx, plan)...)
+}
+
+// reconcileRules returns the rule lists to store in state after a refresh:
+// the prior state's lists when the live ruleset is merely a normalized form
+// of them (the API may expand version-less rules into separate ipv4/ipv6
+// entries), or the live lists when they differ materially.
+func reconcileRules(prior *firewallModel, live hrobot.FirewallRules) (input, output []ruleModel) {
+	priorRules := hrobot.FirewallRules{
+		Input:  toAPIRules(prior.InputRules),
+		Output: toAPIRules(prior.OutputRules),
+	}
+	if live.Equivalent(priorRules) {
+		return prior.InputRules, prior.OutputRules
+	}
+	return fromAPIRules(live.Input), fromAPIRules(live.Output)
 }
 
 func setFirewallModel(m *firewallModel, cfg *hrobot.FirewallConfig) {

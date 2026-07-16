@@ -48,7 +48,7 @@ resource "hrobot_firewall" "example" {
 
 - `filter_ipv6` (Boolean) Apply the rules to IPv6 traffic too.
 - `input_rule` (Attributes List) Inbound rules, evaluated top to bottom. Hetzner enforces a maximum of 10. (see [below for nested schema](#nestedatt--input_rule))
-- `output_rule` (Attributes List) Outbound rules, evaluated top to bottom. (see [below for nested schema](#nestedatt--output_rule))
+- `output_rule` (Attributes List) Outbound rules, evaluated top to bottom. Hetzner may store rules without `ip_version` expanded into separate ipv4 and ipv6 entries; the provider treats that expanded form as equal to the configured rules. (see [below for nested schema](#nestedatt--output_rule))
 - `whitelist_hos` (Boolean) Allow Hetzner online services regardless of rules.
 
 ### Read-Only
