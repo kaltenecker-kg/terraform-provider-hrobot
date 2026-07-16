@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+BUG FIXES:
+
+- **resource/hrobot_firewall**: Fix "Provider produced inconsistent result after apply" when Hetzner returns a
+  normalized ruleset (rules declared without `ip_version` may be stored expanded into separate ipv4 and ipv6
+  entries). Create/Update now keep the planned rules in state, and Read treats such an expanded live ruleset as
+  equal to the configured one instead of reporting phantom drift
+
+DEPENDENCIES:
+
+- Bump `hrobot-go` from v2.0.1 to v2.1.0 (adds `FirewallRules.Equivalent`, used by the fix above)
+
 ## 1.2.2 - 2026-07-13
 
 DEPENDENCIES:
