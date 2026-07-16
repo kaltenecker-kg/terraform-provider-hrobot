@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.3 - 2026-07-16
+
 BUG FIXES:
 
 - **resource/hrobot_firewall**: Fix "Provider produced inconsistent result after apply" when Hetzner returns a
