@@ -1,3 +1,7 @@
+# Task runner for terraform-provider-hrobot (https://taskfile.dev). Mirrors the
+# CI checks (build/lint/vet/test/quality) and adds a `release` task that tags the
+# newest CHANGELOG version and pushes to trigger the release workflow
+# (.github/workflows/release.yml).
 version: "3"
 
 vars:
@@ -13,7 +17,11 @@ vars:
 
 tasks:
   default:
-    deps: [build]
+    desc: List available tasks.
+    # Bare `task` should be safe/inert — show the menu instead of running work.
+    silent: true
+    cmds:
+      - task --list
 
   tidy:
     desc: Run go mod tidy.
@@ -97,3 +105,38 @@ tasks:
     desc: Remove build artifacts.
     cmds:
       - rm -f {{.BINARY}}
+
+  version:
+    desc: Print the release version derived from CHANGELOG.md.
+    silent: true
+    # Single source of truth: the newest released heading in CHANGELOG.md
+    # (goreleaser derives the build version from the git tag).
+    vars:
+      RELEASE_VERSION:
+        sh: grep -m1 -oE '^## [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | cut -d' ' -f2
+    cmds:
+      - echo "v{{.RELEASE_VERSION}}"
+
+  release:
+    desc: Verify, tag the newest CHANGELOG version, and push to trigger the release workflow.
+    vars:
+      RELEASE_VERSION:
+        sh: grep -m1 -oE '^## [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | cut -d' ' -f2
+    deps: [lint, vet, test]
+    preconditions:
+      - sh: '[ -n "{{.RELEASE_VERSION}}" ]'
+        msg: "could not derive a version from CHANGELOG.md"
+      - sh: '[ -z "$(awk ''/^## Unreleased/{f=1;next} /^## /{f=0} f && NF'' CHANGELOG.md)" ]'
+        msg: "the Unreleased section is not empty; stamp it as a version first"
+      - sh: '[ -z "$(git status --porcelain)" ]'
+        msg: "working tree is not clean; commit or stash first"
+      - sh: '[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ]'
+        msg: "releases must be cut from main"
+      - sh: 'git fetch -q origin main && [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]'
+        msg: "local main is not in sync with origin/main; pull first"
+      - sh: '! git rev-parse "v{{.RELEASE_VERSION}}" >/dev/null 2>&1'
+        msg: "tag v{{.RELEASE_VERSION}} already exists"
+    cmds:
+      - git tag -a "v{{.RELEASE_VERSION}}" -m "v{{.RELEASE_VERSION}}"
+      - git push origin "v{{.RELEASE_VERSION}}"
+      - echo "pushed v{{.RELEASE_VERSION}}; the release workflow will publish the signed registry release"
