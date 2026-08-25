@@ -58,3 +58,30 @@ func TestProvider_Schema(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateBaseURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     string
+		wantErr bool
+	}{
+		{"https", "https://robot-ws.your-server.de", false},
+		{"https with port and path", "https://example.com:8443/api", false},
+		{"http localhost", "http://localhost:8080", false},
+		{"http 127.0.0.1", "http://127.0.0.1:8080", false},
+		{"http ipv6 loopback", "http://[::1]:8080", false},
+		{"http remote host", "http://robot-ws.your-server.de", true},
+		{"http private ip", "http://192.168.1.10", true},
+		{"no scheme", "robot-ws.your-server.de", true},
+		{"unsupported scheme", "ftp://example.com", true},
+		{"unparseable", "https://ex ample.com", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateBaseURL(tt.raw)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateBaseURL(%q) error = %v, wantErr %v", tt.raw, err, tt.wantErr)
+			}
+		})
+	}
+}
