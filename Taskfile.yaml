@@ -114,11 +114,14 @@ tasks:
     vars:
       RELEASE_VERSION:
         sh: grep -m1 -oE '^## [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | cut -d' ' -f2
+    preconditions:
+      - sh: '[ -n "{{.RELEASE_VERSION}}" ]'
+        msg: "could not derive a version from CHANGELOG.md"
     cmds:
       - echo "v{{.RELEASE_VERSION}}"
 
   release:
-    desc: Verify, tag the newest CHANGELOG version, and push to trigger the release workflow.
+    desc: Lint, vet, and test, then tag the newest CHANGELOG version and push to trigger the release workflow.
     vars:
       RELEASE_VERSION:
         sh: grep -m1 -oE '^## [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | cut -d' ' -f2
