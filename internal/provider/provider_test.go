@@ -75,6 +75,9 @@ func TestValidateBaseURL(t *testing.T) {
 		{"no scheme", "robot-ws.your-server.de", true},
 		{"unsupported scheme", "ftp://example.com", true},
 		{"unparseable", "https://ex ample.com", true},
+		{"https empty host", "https://", true},
+		{"opaque https", "https:example.com", true},
+		{"http empty host", "http://", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

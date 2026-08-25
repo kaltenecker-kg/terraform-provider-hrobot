@@ -165,6 +165,14 @@ func validateBaseURL(raw string) error {
 	if err != nil {
 		return fmt.Errorf("could not parse %q: %w", raw, err)
 	}
+	if u.Scheme == "" {
+		return fmt.Errorf("missing scheme in %q; use an absolute https URL", raw)
+	}
+	// Covers authority-less forms url.Parse accepts, e.g. "https://" (empty
+	// host) and opaque "https:example.com".
+	if u.Hostname() == "" {
+		return fmt.Errorf("missing host in %q; use an absolute URL such as https://robot-ws.your-server.de", raw)
+	}
 	switch u.Scheme {
 	case "https":
 		return nil
