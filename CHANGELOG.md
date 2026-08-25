@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 1.2.4 - 2026-08-25
+
+BUG FIXES:
+
+- **provider**: Reject a `base_url` (or `HROBOT_BASE_URL`) that would send the API credentials over cleartext:
+  the URL must be absolute with a host and use `https`; `http` is allowed only for loopback hosts
+  (e.g. a local API mock)
+
 ## 1.2.3 - 2026-07-16
 
 BUG FIXES:
