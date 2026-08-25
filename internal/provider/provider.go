@@ -3,6 +3,9 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"net"
+	"net/url"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -53,7 +56,7 @@ func (p *hrobotProvider) Schema(_ context.Context, _ provider.SchemaRequest, res
 				Sensitive:   true,
 			},
 			"base_url": schema.StringAttribute{
-				Description: "Override API base URL. Falls back to HROBOT_BASE_URL, then the library default.",
+				Description: "Override API base URL. Falls back to HROBOT_BASE_URL, then the library default. Must use `https`; `http` is allowed only for loopback hosts (e.g. a local API mock).",
 				Optional:    true,
 			},
 		},
@@ -84,6 +87,15 @@ func (p *hrobotProvider) Configure(ctx context.Context, req provider.ConfigureRe
 			"missing hrobot password",
 			"Set the provider `password` attribute or the HROBOT_PASSWORD environment variable.",
 		)
+	}
+	if baseURL != "" {
+		if err := validateBaseURL(baseURL); err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("base_url"),
+				"invalid hrobot base_url",
+				err.Error(),
+			)
+		}
 	}
 	if resp.Diagnostics.HasError() {
 		return
@@ -143,4 +155,37 @@ func stringOrEnv(v types.String, env string) string {
 		return v.ValueString()
 	}
 	return os.Getenv(env)
+}
+
+// validateBaseURL rejects base URLs that would send the HTTP Basic credentials
+// over cleartext. https is always allowed; http only for loopback hosts so
+// local API mocks keep working.
+func validateBaseURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("could not parse %q: %w", raw, err)
+	}
+	if u.Scheme == "" {
+		return fmt.Errorf("missing scheme in %q; use an absolute https URL", raw)
+	}
+	// Covers authority-less forms url.Parse accepts, e.g. "https://" (empty
+	// host) and opaque "https:example.com".
+	if u.Hostname() == "" {
+		return fmt.Errorf("missing host in %q; use an absolute URL such as https://robot-ws.your-server.de", raw)
+	}
+	switch u.Scheme {
+	case "https":
+		return nil
+	case "http":
+		host := u.Hostname()
+		if host == "localhost" {
+			return nil
+		}
+		if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+			return nil
+		}
+		return fmt.Errorf("plain http would send the API credentials unencrypted; use https (http is only allowed for loopback hosts such as localhost or 127.0.0.1)")
+	default:
+		return fmt.Errorf("unsupported scheme %q; use https", u.Scheme)
+	}
 }
