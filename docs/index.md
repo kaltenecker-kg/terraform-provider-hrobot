@@ -30,6 +30,6 @@ provider "hrobot" {}
 
 ### Optional
 
-- `base_url` (String) Override API base URL. Falls back to HROBOT_BASE_URL, then the library default. Must use `https`; `http` is allowed only for loopback hosts (e.g. a local API mock).
+- `base_url` (String) Override API base URL. Falls back to HROBOT_BASE_URL, then the library default. Must be an absolute `https` URL without embedded credentials, query, or fragment; `http` is allowed only for loopback hosts (e.g. a local API mock).
 - `password` (String, Sensitive) Hetzner Robot webservice password. Falls back to HROBOT_PASSWORD.
 - `username` (String) Hetzner Robot webservice username. Falls back to HROBOT_USERNAME.

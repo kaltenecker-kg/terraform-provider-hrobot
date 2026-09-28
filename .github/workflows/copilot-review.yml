@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 5
     # Contributors only: org owners/members, repo collaborators, or authors with
     # a previously merged contribution. Excludes FIRST_TIME_CONTRIBUTOR, NONE,
-    # and bot authors (e.g. Renovate).
+    # and bot authors (e.g. Dependabot).
     if: >-
       github.event.pull_request.user.type != 'Bot' &&
       contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR", "CONTRIBUTOR"]'), github.event.pull_request.author_association)

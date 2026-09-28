@@ -28,13 +28,22 @@ tasks:
     cmds:
       - go mod tidy
 
+  doctor:
+    desc: Check the local Go and golangci-lint versions against go.mod's go directive.
+    # Explains the mismatches that have repeatedly been "fixed" by editing the
+    # go directive, and names the real remedy (upgrade the tool).
+    cmds:
+      - scripts/check-go-toolchain.sh
+
   fmt:
     desc: Format Go code via golangci-lint.
+    deps: [doctor]
     cmds:
       - golangci-lint run --fix
 
   lint:
     desc: Run golangci-lint.
+    deps: [doctor]
     cmds:
       - golangci-lint run
 
@@ -60,15 +69,16 @@ tasks:
 
   vulncheck:
     desc: Scan for known vulnerabilities in dependencies and reachable code.
-    # govulncheck is pinned by commit SHA for reproducibility; Renovate bumps it.
+    # govulncheck is a `tool` directive in go.mod (pinned via go.sum, bumped
+    # by Dependabot).
     cmds:
-      - go run golang.org/x/vuln/cmd/govulncheck@19b0bb6a272792b9afa8a6983c3e9b9a1816947f ./... # v1.6.0
+      - go tool govulncheck ./...
 
   docs:
     desc: Generate registry documentation under docs/ from the provider schema.
     # tfplugindocs extracts the schema via the Terraform CLI (a dev-time tool
     # only; downloaded automatically when absent). The pinned version lives in
-    # the //go:generate directive in main.go.
+    # the //go:generate directive in main.go and is bumped by hand.
     cmds:
       - go generate ./...
 

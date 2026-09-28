@@ -1,1 +1,2 @@
+scripts/check-go-toolchain.sh
 golangci-lint run

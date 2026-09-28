@@ -11,8 +11,8 @@ import (
 )
 
 // Generate the registry documentation under docs/ from the provider schema and
-// the examples/ directory. tfplugindocs is pinned to a release tag that Renovate
-// bumps; run via `task docs`.
+// the examples/ directory. tfplugindocs is pinned to a release tag; Dependabot
+// cannot track a go:generate pin, so bump it by hand. Run via `task docs`.
 //go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0 generate --provider-name hrobot
 
 // version is set at build time via -ldflags.

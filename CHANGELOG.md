@@ -2,6 +2,48 @@
 
 ## Unreleased
 
+BUG FIXES:
+
+- **provider**: `base_url` (or `HROBOT_BASE_URL`) now also rejects URLs that embed credentials (`https://user:pass@host`)
+  or carry a query string or fragment, at configure time with a clear diagnostic. Previously a userinfo component
+  was silently dropped and a query would have swallowed every request path
+
+SECURITY:
+
+- Bump `google.golang.org/grpc` from v1.83.1 to v1.83.2 (fixes GO-2026-6443, a server panic on missing
+  `:authority`/`Host` headers reachable through the plugin server; v1.84.0 was cut before the fix and is still
+  affected, so Dependabot is configured to ignore v1.84.x until v1.85.0 is released)
+- Bump `hrobot-go` from v2.2.1 to v2.3.0: response bodies are read with a 32 MiB cap so a misbehaving endpoint
+  cannot exhaust memory, non-2xx responses are always reported as errors, and base URLs are validated in the client
+
+DEPENDENCIES:
+
+- Bump indirect `golang.org/x/net`, `golang.org/x/sys`, `golang.org/x/text`, `hashicorp/go-uuid`, and `genproto`
+- Pin `golangci-lint` to a fixed version in CI instead of `latest`
+- Bump `govulncheck` to v1.8.0 and declare it as a go.mod `tool` directive so its version is pinned in `go.sum`
+  and tracked by Dependabot; CI and `task vulncheck` run `go tool govulncheck`
+- Commit `pnpm-lock.yaml` so the husky dev dependency is pinned with an integrity hash
+
+CI:
+
+- Run the test workflow (including `govulncheck`) weekly on a schedule and on manual dispatch, so a vulnerability
+  published between pull requests is surfaced without waiting for the next change
+- Add a repo-local composite action (`.github/actions/setup-go`) used by every CI and release job. It derives the
+  Go minor from `go.mod`, installs the newest patch via setup-go, and then asserts against go.dev that the installed
+  toolchain *is* the newest patch, failing with one clear message otherwise. The toolchain had drifted to a stale
+  patch more than once (most recently because the `go 1.26.0` directive, now required by dependencies, is treated
+  by setup-go as an exact pin), each time surfacing only as `govulncheck` failing on already-fixed standard-library
+  advisories, and it would have shipped silently in a signed release
+- Add `scripts/check-go-toolchain.sh` (run by the pre-commit hook and `task doctor`, a dependency of `task lint`).
+  It explains the two local mismatches that were repeatedly "fixed" by editing the go directive, a pinned local
+  Go older than `go.mod` and a `golangci-lint` built with an older Go ("the Go language version used to build
+  golangci-lint is lower than the targeted Go version"), and names the real remedy: upgrade the tool. The go
+  directive in `go.mod` carries a comment saying the same
+- GoReleaser now fails on an untidy `go.mod` (`go mod tidy -diff` + `go mod verify`) instead of rewriting it
+  during a signed release build
+- Replace the Renovate config (Renovate does not run on the org's public repositories) with Dependabot
+  version updates for Go modules (including indirect requirements), GitHub Actions, and npm
+
 ## 1.2.4 - 2026-08-25
 
 BUG FIXES:

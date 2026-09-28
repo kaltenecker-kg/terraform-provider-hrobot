@@ -1,0 +1,62 @@
+name: Set up Go (newest patch)
+description: >-
+  Installs the newest patch release of the Go minor declared in go.mod and
+  fails the job if the installed toolchain is anything else.
+
+  Why this exists: the Go toolchain used by CI and by the signed release build
+  has drifted to a stale patch more than once (a runner-preinstalled patch that
+  lacked a crypto/tls fix; a `go 1.26.0` directive that setup-go treated as an
+  exact pin and resolved to the vulnerable initial release). Every occurrence
+  surfaced only as govulncheck failing on standard-library advisories, or would
+  have shipped silently in a release. This action derives the version range
+  from go.mod (single source of truth, nothing to keep in sync), asks setup-go
+  for the newest patch, and then asserts the invariant directly against
+  go.dev, so a stale toolchain fails with one clear message regardless of
+  which mechanism regressed.
+
+runs:
+  using: composite
+  steps:
+    - name: Derive Go minor from go.mod
+      id: gomod
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Accept `go 1.26` and `go 1.26.0`; only the minor matters here.
+        minor="$(sed -nE 's/^go ([0-9]+\.[0-9]+)(\.[0-9]+)?[[:space:]]*$/\1/p' go.mod | head -n1)"
+        if [ -z "$minor" ]; then
+          echo "::error file=go.mod::could not read a 'go X.Y' directive from go.mod"
+          exit 1
+        fi
+        echo "minor=$minor" >> "$GITHUB_OUTPUT"
+        echo "Go minor from go.mod: $minor (requesting newest ${minor}.x patch)"
+
+    - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      with:
+        # A range, deliberately not go-version-file: a three-part go directive
+        # is treated by setup-go as an exact pin.
+        go-version: ${{ steps.gomod.outputs.minor }}.x
+        check-latest: true
+        cache: true
+
+    - name: Assert the installed toolchain is the newest patch
+      shell: bash
+      env:
+        MINOR: ${{ steps.gomod.outputs.minor }}
+      run: |
+        set -euo pipefail
+        have="$(go env GOVERSION)"
+        want="$(curl -fsSL --retry 3 --retry-delay 5 'https://go.dev/dl/?mode=json&include=all' \
+          | jq -r --arg p "go${MINOR}." '.[] | select(.stable == true) | .version | select(startswith($p))' \
+          | sort -V | tail -n1)"
+        if [ -z "$want" ]; then
+          echo "::error::go.dev lists no stable go${MINOR}.x release; cannot verify the toolchain"
+          exit 1
+        fi
+        if [ "$have" != "$want" ]; then
+          echo "::error::installed Go toolchain is $have but the newest ${MINOR}.x patch is $want." \
+               "A stale toolchain ships known standard-library vulnerabilities;" \
+               "check the setup-go spec/cache in .github/actions/setup-go/action.yml"
+          exit 1
+        fi
+        echo "Go toolchain OK: $have is the newest ${MINOR}.x patch"
