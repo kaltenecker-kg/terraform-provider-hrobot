@@ -56,7 +56,7 @@ func (p *hrobotProvider) Schema(_ context.Context, _ provider.SchemaRequest, res
 				Sensitive:   true,
 			},
 			"base_url": schema.StringAttribute{
-				Description: "Override API base URL. Falls back to HROBOT_BASE_URL, then the library default. Must use `https`; `http` is allowed only for loopback hosts (e.g. a local API mock).",
+				Description: "Override API base URL. Falls back to HROBOT_BASE_URL, then the library default. Must be an absolute `https` URL without embedded credentials, query, or fragment; `http` is allowed only for loopback hosts (e.g. a local API mock).",
 				Optional:    true,
 			},
 		},
@@ -172,6 +172,17 @@ func validateBaseURL(raw string) error {
 	// host) and opaque "https:example.com".
 	if u.Hostname() == "" {
 		return fmt.Errorf("missing host in %q; use an absolute URL such as https://robot-ws.your-server.de", raw)
+	}
+	// The provider's username/password are the only credentials; a userinfo
+	// component would be silently dropped by the client (or, worse, end up in
+	// debug logs), so reject it rather than let a typo leak a secret.
+	if u.User != nil {
+		return fmt.Errorf("base_url must not embed credentials; set the provider `username` and `password` attributes instead")
+	}
+	// The client concatenates request paths onto the base URL, so a query or
+	// fragment would swallow the path (or be sent verbatim on every request).
+	if u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.RawFragment != "" {
+		return fmt.Errorf("base_url must not contain a query string or fragment")
 	}
 	switch u.Scheme {
 	case "https":

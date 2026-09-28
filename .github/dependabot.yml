@@ -1,0 +1,55 @@
+# Dependabot version updates. Renovate does not run on this org's public
+# repositories, so Dependabot is the single updater. Tool pins that Dependabot
+# cannot track natively (tfplugindocs in main.go, golangci-lint in test.yml)
+# are bumped by hand; govulncheck is a go.mod `tool` directive so it is
+# covered by the gomod ecosystem below.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "chore(deps)"
+    # Include `// indirect` requirements so security fixes deep in the
+    # plugin-framework/grpc stack (like GO-2026-6443) are bumped as well.
+    allow:
+      - dependency-type: all
+    groups:
+      go-modules:
+        patterns: ["*"]
+    ignore:
+      # GO-2026-6443: v1.84.0 was cut before the fix landed and is still
+      # vulnerable; stay on the patched v1.83.x until v1.85.0 is released,
+      # then drop this entry.
+      - dependency-name: google.golang.org/grpc
+        versions: [">= 1.84.0, < 1.85.0"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      npm:
+        patterns: ["*"]

@@ -60,15 +60,16 @@ tasks:
 
   vulncheck:
     desc: Scan for known vulnerabilities in dependencies and reachable code.
-    # govulncheck is pinned by commit SHA for reproducibility; Renovate bumps it.
+    # govulncheck is a `tool` directive in go.mod (pinned via go.sum, bumped
+    # by Dependabot).
     cmds:
-      - go run golang.org/x/vuln/cmd/govulncheck@19b0bb6a272792b9afa8a6983c3e9b9a1816947f ./... # v1.6.0
+      - go tool govulncheck ./...
 
   docs:
     desc: Generate registry documentation under docs/ from the provider schema.
     # tfplugindocs extracts the schema via the Terraform CLI (a dev-time tool
     # only; downloaded automatically when absent). The pinned version lives in
-    # the //go:generate directive in main.go.
+    # the //go:generate directive in main.go and is bumped by hand.
     cmds:
       - go generate ./...
 

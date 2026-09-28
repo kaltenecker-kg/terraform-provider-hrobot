@@ -78,6 +78,12 @@ func TestValidateBaseURL(t *testing.T) {
 		{"https empty host", "https://", true},
 		{"opaque https", "https:example.com", true},
 		{"http empty host", "http://", true},
+		{"embedded credentials", "https://user:secret@robot-ws.your-server.de", true},
+		{"embedded username only", "https://user@robot-ws.your-server.de", true},
+		{"query string", "https://robot-ws.your-server.de/?debug=1", true},
+		{"empty query", "https://robot-ws.your-server.de/?", true},
+		{"fragment", "https://robot-ws.your-server.de/#frag", true},
+		{"trailing slash", "https://robot-ws.your-server.de/", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

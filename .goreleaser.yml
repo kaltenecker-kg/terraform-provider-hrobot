@@ -4,7 +4,11 @@ version: 2
 
 before:
   hooks:
-    - go mod tidy
+    # Fail (never rewrite) if go.mod/go.sum are not tidy, and verify the module
+    # cache against go.sum, so a signed release can only be built from the
+    # exact dependency set that CI reviewed.
+    - go mod tidy -diff
+    - go mod verify
 
 builds:
   - env:
