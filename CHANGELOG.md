@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.5 - 2026-09-28
+
 BUG FIXES:
 
 - **provider**: `base_url` (or `HROBOT_BASE_URL`) now also rejects URLs that embed credentials (`https://user:pass@host`)
