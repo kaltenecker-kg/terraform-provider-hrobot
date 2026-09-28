@@ -158,8 +158,10 @@ func stringOrEnv(v types.String, env string) string {
 }
 
 // validateBaseURL rejects base URLs that would send the HTTP Basic credentials
-// over cleartext. https is always allowed; http only for loopback hosts so
-// local API mocks keep working.
+// over cleartext, or that cannot serve as a prefix for API request paths. The
+// URL must be absolute with a host, carry no userinfo, query, or fragment, and
+// use https; http is allowed only for loopback hosts so local API mocks keep
+// working.
 func validateBaseURL(raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil {
