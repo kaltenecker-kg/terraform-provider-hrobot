@@ -1,5 +1,8 @@
 module github.com/kaltenecker-kg/terraform-provider-hrobot
 
+// Minimum language version. The three-part form is required by dependencies
+// and maintained by `go mod tidy`; CI derives its toolchain from it. Do not
+// edit it by hand to silence a local tool: run `task doctor` for the remedy.
 go 1.26.0
 
 require (

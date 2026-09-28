@@ -28,13 +28,22 @@ tasks:
     cmds:
       - go mod tidy
 
+  doctor:
+    desc: Check the local Go and golangci-lint versions against go.mod's go directive.
+    # Explains the mismatches that have repeatedly been "fixed" by editing the
+    # go directive, and names the real remedy (upgrade the tool).
+    cmds:
+      - scripts/check-go-toolchain.sh
+
   fmt:
     desc: Format Go code via golangci-lint.
+    deps: [doctor]
     cmds:
       - golangci-lint run --fix
 
   lint:
     desc: Run golangci-lint.
+    deps: [doctor]
     cmds:
       - golangci-lint run
 

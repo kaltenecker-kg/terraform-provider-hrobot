@@ -34,6 +34,11 @@ CI:
   patch more than once (most recently because the `go 1.26.0` directive, now required by dependencies, is treated
   by setup-go as an exact pin), each time surfacing only as `govulncheck` failing on already-fixed standard-library
   advisories, and it would have shipped silently in a signed release
+- Add `scripts/check-go-toolchain.sh` (run by the pre-commit hook and `task doctor`, a dependency of `task lint`).
+  It explains the two local mismatches that were repeatedly "fixed" by editing the go directive, a pinned local
+  Go older than `go.mod` and a `golangci-lint` built with an older Go ("the Go language version used to build
+  golangci-lint is lower than the targeted Go version"), and names the real remedy: upgrade the tool. The go
+  directive in `go.mod` carries a comment saying the same
 - GoReleaser now fails on an untidy `go.mod` (`go mod tidy -diff` + `go mod verify`) instead of rewriting it
   during a signed release build
 - Replace the Renovate config (Renovate does not run on the org's public repositories) with Dependabot
