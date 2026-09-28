@@ -28,9 +28,12 @@ CI:
 
 - Run the test workflow (including `govulncheck`) weekly on a schedule and on manual dispatch, so a vulnerability
   published between pull requests is surfaced without waiting for the next change
-- Select the Go toolchain in CI and release workflows with the range `1.26.x` instead of `go-version-file`: the
-  `go 1.26.0` directive (now required by dependencies) is treated by setup-go as an exact pin, which installed the
-  initial 1.26.0 release and failed `govulncheck` on already-fixed standard-library advisories
+- Add a repo-local composite action (`.github/actions/setup-go`) used by every CI and release job. It derives the
+  Go minor from `go.mod`, installs the newest patch via setup-go, and then asserts against go.dev that the installed
+  toolchain *is* the newest patch, failing with one clear message otherwise. The toolchain had drifted to a stale
+  patch more than once (most recently because the `go 1.26.0` directive, now required by dependencies, is treated
+  by setup-go as an exact pin), each time surfacing only as `govulncheck` failing on already-fixed standard-library
+  advisories, and it would have shipped silently in a signed release
 - GoReleaser now fails on an untidy `go.mod` (`go mod tidy -diff` + `go mod verify`) instead of rewriting it
   during a signed release build
 - Replace the Renovate config (Renovate does not run on the org's public repositories) with Dependabot

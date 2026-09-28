@@ -30,7 +30,10 @@ updates:
         versions: [">= 1.84.0, < 1.85.0"]
 
   - package-ecosystem: github-actions
-    directory: /
+    # The composite action pins setup-go by SHA too.
+    directories:
+      - /
+      - /.github/actions/setup-go
     schedule:
       interval: weekly
       day: monday

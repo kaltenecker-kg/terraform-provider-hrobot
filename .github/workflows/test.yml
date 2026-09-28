@@ -27,17 +27,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          # A semver range, not go-version-file: go.mod carries `go 1.26.0`
-          # (required by its dependencies), which setup-go treats as an exact
-          # pin and would install the initial 1.26.0 release with known stdlib
-          # vulnerabilities. The range plus check-latest fetches the newest
-          # 1.26.x patch. Bump this together with the go directive in go.mod
-          # (a mismatch fails `go build` loudly under GOTOOLCHAIN=local).
-          go-version: '1.26.x'
-          check-latest: true
-          cache: true
+      # Newest patch of the go.mod minor, asserted against go.dev (see the
+      # action for why this is not a plain setup-go step).
+      - uses: ./.github/actions/setup-go
       - run: go mod download
       - run: go build -v ./...
       - name: go vet
@@ -56,17 +48,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          # A semver range, not go-version-file: go.mod carries `go 1.26.0`
-          # (required by its dependencies), which setup-go treats as an exact
-          # pin and would install the initial 1.26.0 release with known stdlib
-          # vulnerabilities. The range plus check-latest fetches the newest
-          # 1.26.x patch. Bump this together with the go directive in go.mod
-          # (a mismatch fails `go build` loudly under GOTOOLCHAIN=local).
-          go-version: '1.26.x'
-          check-latest: true
-          cache: true
+      # Newest patch of the go.mod minor, asserted against go.dev (see the
+      # action for why this is not a plain setup-go step).
+      - uses: ./.github/actions/setup-go
       - run: go mod download
       - run: go test -v -race -cover -timeout=180s ./...
 
@@ -76,17 +60,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          # A semver range, not go-version-file: go.mod carries `go 1.26.0`
-          # (required by its dependencies), which setup-go treats as an exact
-          # pin and would install the initial 1.26.0 release with known stdlib
-          # vulnerabilities. The range plus check-latest fetches the newest
-          # 1.26.x patch. Bump this together with the go directive in go.mod
-          # (a mismatch fails `go build` loudly under GOTOOLCHAIN=local).
-          go-version: '1.26.x'
-          check-latest: true
-          cache: true
+      # Newest patch of the go.mod minor, asserted against go.dev (see the
+      # action for why this is not a plain setup-go step).
+      - uses: ./.github/actions/setup-go
       - name: go mod tidy is clean
         run: go mod tidy -diff
       - name: go mod verify
