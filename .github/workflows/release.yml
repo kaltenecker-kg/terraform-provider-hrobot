@@ -17,7 +17,7 @@ jobs:
     # Runs under the protected `release` environment.
     environment: release
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       # Newest patch of the go.mod minor, asserted against go.dev, so a signed
@@ -26,7 +26,7 @@ jobs:
 
       - name: Load signing key from 1Password
         id: op
-        uses: 1password/load-secrets-action@860a5d856924d259f6dcc493575a0b1bb0ae2dde # v4.0.1
+        uses: 1password/load-secrets-action@3a12b0ab99d9cd590a3e9b5a90ea017210ed9556 # v4.0.1
         with:
           # Expose as step outputs, not job-wide env.
           export-env: false

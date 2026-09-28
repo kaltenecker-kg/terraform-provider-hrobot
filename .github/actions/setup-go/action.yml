@@ -31,7 +31,7 @@ runs:
         echo "minor=$minor" >> "$GITHUB_OUTPUT"
         echo "Go minor from go.mod: $minor (requesting newest ${minor}.x patch)"
 
-    - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         # A range, deliberately not go-version-file: a three-part go directive
         # is treated by setup-go as an exact pin.
