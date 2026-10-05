@@ -26,7 +26,7 @@ jobs:
 
       - name: Load signing key from 1Password
         id: op
-        uses: 1password/load-secrets-action@3a12b0ab99d9cd590a3e9b5a90ea017210ed9556 # v4.0.1
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
         with:
           # Expose as step outputs, not job-wide env.
           export-env: false
