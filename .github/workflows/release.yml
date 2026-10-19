@@ -26,7 +26,7 @@ jobs:
 
       - name: Load signing key from 1Password
         id: op
-        uses: 1password/load-secrets-action@3a12b0ab99d9cd590a3e9b5a90ea017210ed9556 # v4.0.1
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
         with:
           # Expose as step outputs, not job-wide env.
           export-env: false
@@ -87,7 +87,7 @@ jobs:
           echo "----- release notes -----"; cat "$out"
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           version: '~> v2'
           args: release --clean --release-notes=${{ steps.notes.outputs.file }}
