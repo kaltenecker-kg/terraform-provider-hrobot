@@ -36,7 +36,7 @@ Read-Only:
 - `mask` (Number) Subnet mask (CIDR bits).
 - `server_ip` (String) Main IP of the owning server.
 - `server_number` (Number) Number of the owning server.
-- `traffic_daily` (Number) Daily traffic warning threshold (MB).
-- `traffic_hourly` (Number) Hourly traffic warning threshold (MB).
-- `traffic_monthly` (Number) Monthly traffic warning threshold (GB).
-- `traffic_warnings` (Boolean) Whether traffic warnings are enabled.
+- `traffic_daily` (Number, Deprecated) Daily traffic warning threshold (MB).
+- `traffic_hourly` (Number, Deprecated) Hourly traffic warning threshold (MB).
+- `traffic_monthly` (Number, Deprecated) Monthly traffic warning threshold (GB).
+- `traffic_warnings` (Boolean, Deprecated) Whether traffic warnings are enabled.

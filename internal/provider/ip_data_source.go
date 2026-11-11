@@ -54,10 +54,10 @@ func ipAttributes(withIPInput bool) map[string]schema.Attribute {
 		"server_number":    schema.Int64Attribute{Computed: true, Description: "Number of the owning server."},
 		"locked":           schema.BoolAttribute{Computed: true, Description: "Whether the IP is locked."},
 		"separate_mac":     schema.StringAttribute{Computed: true, Description: "Separate MAC address, if one is set."},
-		"traffic_warnings": schema.BoolAttribute{Computed: true, Description: "Whether traffic warnings are enabled."},
-		"traffic_hourly":   schema.Int64Attribute{Computed: true, Description: "Hourly traffic warning threshold (MB)."},
-		"traffic_daily":    schema.Int64Attribute{Computed: true, Description: "Daily traffic warning threshold (MB)."},
-		"traffic_monthly":  schema.Int64Attribute{Computed: true, Description: "Monthly traffic warning threshold (GB)."},
+		"traffic_warnings": schema.BoolAttribute{Computed: true, Description: "Whether traffic warnings are enabled.", DeprecationMessage: trafficWarningDeprecation},
+		"traffic_hourly":   schema.Int64Attribute{Computed: true, Description: "Hourly traffic warning threshold (MB).", DeprecationMessage: trafficWarningDeprecation},
+		"traffic_daily":    schema.Int64Attribute{Computed: true, Description: "Daily traffic warning threshold (MB).", DeprecationMessage: trafficWarningDeprecation},
+		"traffic_monthly":  schema.Int64Attribute{Computed: true, Description: "Monthly traffic warning threshold (GB).", DeprecationMessage: trafficWarningDeprecation},
 	}
 }
 
@@ -105,8 +105,8 @@ func setIPModel(m *ipModel, a *hrobot.IPAddress) {
 	m.ServerNumber = types.Int64Value(int64(a.ServerNumber))
 	m.Locked = types.BoolValue(a.Locked)
 	m.SeparateMAC = optString(a.SeparateMac)
-	m.TrafficWarnings = types.BoolValue(a.TrafficWarnings)
-	m.TrafficHourly = types.Int64Value(int64(a.TrafficHourly))
-	m.TrafficDaily = types.Int64Value(int64(a.TrafficDaily))
-	m.TrafficMonthly = types.Int64Value(int64(a.TrafficMonthly))
+	m.TrafficWarnings = types.BoolValue(a.TrafficWarnings)       //nolint:staticcheck // deprecated upstream; kept until the attribute is removed
+	m.TrafficHourly = types.Int64Value(int64(a.TrafficHourly))   //nolint:staticcheck // deprecated upstream; kept until the attribute is removed
+	m.TrafficDaily = types.Int64Value(int64(a.TrafficDaily))     //nolint:staticcheck // deprecated upstream; kept until the attribute is removed
+	m.TrafficMonthly = types.Int64Value(int64(a.TrafficMonthly)) //nolint:staticcheck // deprecated upstream; kept until the attribute is removed
 }

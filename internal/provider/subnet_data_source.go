@@ -51,10 +51,10 @@ func subnetAttributes(withIPInput bool) map[string]schema.Attribute {
 		"server_number":    schema.Int64Attribute{Computed: true, Description: "Number of the owning server."},
 		"failover":         schema.BoolAttribute{Computed: true, Description: "Whether this is a failover subnet."},
 		"locked":           schema.BoolAttribute{Computed: true, Description: "Whether the subnet is locked."},
-		"traffic_warnings": schema.BoolAttribute{Computed: true, Description: "Whether traffic warnings are enabled."},
-		"traffic_hourly":   schema.Int64Attribute{Computed: true, Description: "Hourly traffic warning threshold (MB)."},
-		"traffic_daily":    schema.Int64Attribute{Computed: true, Description: "Daily traffic warning threshold (MB)."},
-		"traffic_monthly":  schema.Int64Attribute{Computed: true, Description: "Monthly traffic warning threshold (GB)."},
+		"traffic_warnings": schema.BoolAttribute{Computed: true, Description: "Whether traffic warnings are enabled.", DeprecationMessage: trafficWarningDeprecation},
+		"traffic_hourly":   schema.Int64Attribute{Computed: true, Description: "Hourly traffic warning threshold (MB).", DeprecationMessage: trafficWarningDeprecation},
+		"traffic_daily":    schema.Int64Attribute{Computed: true, Description: "Daily traffic warning threshold (MB).", DeprecationMessage: trafficWarningDeprecation},
+		"traffic_monthly":  schema.Int64Attribute{Computed: true, Description: "Monthly traffic warning threshold (GB).", DeprecationMessage: trafficWarningDeprecation},
 	}
 }
 
@@ -96,8 +96,8 @@ func setSubnetModel(m *subnetModel, s *hrobot.SubnetResource) {
 	m.ServerNumber = types.Int64Value(int64(s.ServerNumber))
 	m.Failover = types.BoolValue(s.Failover)
 	m.Locked = types.BoolValue(s.Locked)
-	m.TrafficWarnings = types.BoolValue(s.TrafficWarnings)
-	m.TrafficHourly = types.Int64Value(int64(s.TrafficHourly))
-	m.TrafficDaily = types.Int64Value(int64(s.TrafficDaily))
-	m.TrafficMonthly = types.Int64Value(int64(s.TrafficMonthly))
+	m.TrafficWarnings = types.BoolValue(s.TrafficWarnings)       //nolint:staticcheck // deprecated upstream; kept until the attribute is removed
+	m.TrafficHourly = types.Int64Value(int64(s.TrafficHourly))   //nolint:staticcheck // deprecated upstream; kept until the attribute is removed
+	m.TrafficDaily = types.Int64Value(int64(s.TrafficDaily))     //nolint:staticcheck // deprecated upstream; kept until the attribute is removed
+	m.TrafficMonthly = types.Int64Value(int64(s.TrafficMonthly)) //nolint:staticcheck // deprecated upstream; kept until the attribute is removed
 }

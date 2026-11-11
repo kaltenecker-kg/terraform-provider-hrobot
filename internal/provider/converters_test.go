@@ -70,7 +70,7 @@ func TestSetIPModel(t *testing.T) {
 	var m ipModel
 	setIPModel(&m, &hrobot.IPAddress{
 		IP: net.ParseIP("1.2.3.4"), ServerIP: net.ParseIP("9.9.9.9"),
-		Mask: 32, ServerNumber: 7, TrafficWarnings: true, TrafficMonthly: 1000,
+		Mask: 32, ServerNumber: 7, TrafficWarnings: true, TrafficMonthly: 1000, //nolint:staticcheck // deprecated upstream; still mapped
 	}) // Gateway and Broadcast are nil → null strings
 	if !m.Gateway.IsNull() || !m.Broadcast.IsNull() {
 		t.Errorf("expected nil net.IP to map to null string")
