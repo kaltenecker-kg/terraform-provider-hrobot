@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+DEPRECATIONS:
+
+- **data sources**: `traffic_warnings`, `traffic_hourly`, `traffic_daily`, and `traffic_monthly` on `hrobot_ip`,
+  `hrobot_ips`, `hrobot_subnet`, and `hrobot_subnets` are deprecated. Hetzner removes the traffic warning fields from
+  the Robot API on 12 January 2027; after that date they are always `false`/`0`
+
+SECURITY:
+
+- Bump indirect `golang.org/x/net` from v0.59.0 to v0.62.0 (fixes GO-2026-6603, GO-2026-6610, GO-2026-6611,
+  GO-2026-6612, and GO-2026-6617, HTTP/2 issues reachable through the plugin server and the API client, plus
+  GO-2026-6860 and GO-2026-6866 in `html`, which the provider does not call)
+
+DEPENDENCIES:
+
+- Bump `hrobot-go` from v2.3.0 to v2.4.0: API errors with an unexpected JSON body are reported with code `UNKNOWN`
+  and the body instead of an empty message, 404 responses are recognised as not-found for every endpoint, and
+  timestamps no longer depend on the host's time zone database
+- Bump `google.golang.org/grpc` from v1.83.2 to v1.85.0 and drop the Dependabot ignore for v1.84.x
+- Bump `govulncheck` to v1.9.0 and indirect `golang.org/x/mod`, `golang.org/x/sync`, `golang.org/x/sys`,
+  `golang.org/x/text`, `golang.org/x/tools`, `golang.org/x/telemetry`, `genproto`, `terraform-registry-address`,
+  and `go-colorable`
+- Bump the pinned `golangci-lint` in CI from v2.14.0 to v2.15.0
+
 ## 1.2.5 - 2026-09-28
 
 BUG FIXES:

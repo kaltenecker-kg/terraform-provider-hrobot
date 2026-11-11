@@ -78,3 +78,9 @@ func configureClient(providerData any, diags *diag.Diagnostics) *hrobot.Client {
 	}
 	return c
 }
+
+// trafficWarningDeprecation is the deprecation notice shared by the
+// traffic_warnings/traffic_hourly/traffic_daily/traffic_monthly attributes of
+// the IP and subnet data sources.
+const trafficWarningDeprecation = "Hetzner removes the traffic warning fields from the Robot API on 12 January 2027. " +
+	"After that date this attribute is always false/0; it will be removed in a future major release."

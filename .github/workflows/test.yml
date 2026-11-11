@@ -39,7 +39,7 @@ jobs:
         with:
           # Pinned so CI does not pull a floating linter binary. Dependabot cannot
           # track this value; bump it by hand when golangci-lint releases.
-          version: v2.14.0
+          version: v2.15.0
 
   test:
     name: Unit Tests
