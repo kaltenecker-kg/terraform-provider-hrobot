@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.3.0 - 2026-11-11
+
 DEPRECATIONS:
 
 - **data sources**: `traffic_warnings`, `traffic_hourly`, `traffic_daily`, and `traffic_monthly` on `hrobot_ip`,
