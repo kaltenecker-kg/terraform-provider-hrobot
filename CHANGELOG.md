@@ -9,7 +9,7 @@ BUG FIXES:
 - **resource/hrobot_firewall**: changing `server_number` now replaces the resource instead of configuring the new
   server and leaving the old server's rules untracked
 - **resource/hrobot_firewall**: a firewall whose server no longer exists is removed from state instead of failing
-  every refresh
+  every refresh, and destroying it no longer fails
 - **resource/hrobot_storagebox_subaccount**: removing `comment` now clears it instead of failing the apply
 - **resource/hrobot_storagebox_subaccount**, **resource/hrobot_storagebox_snapshot**: `comment = ""` no longer
   fails the apply as inconsistent
