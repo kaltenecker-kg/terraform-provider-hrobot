@@ -2,7 +2,17 @@
 
 ## Unreleased
 
+FEATURES:
+
+- **Resource identity** for all eight resources (Terraform 1.12+ and OpenTofu 1.12+): import with an
+  `import { identity = { ... } }` block using typed attributes instead of a composite string ID. Import by string
+  ID keeps working, and older CLIs are unaffected
+
 BUG FIXES:
+
+- **resource/hrobot_ssh_key**: importing a key configured with `file()` no longer plans a replacement; a
+  whitespace-only `public_key` difference is an in-place update that does not touch the key
+- **resource/hrobot_vswitch**: the first plan after an import no longer shows a `cancellation_date` change
 
 - **resource/hrobot_ssh_key**: `public_key` read with `file()` (trailing newline) no longer fails the apply as
   inconsistent or forces a replacement on every plan

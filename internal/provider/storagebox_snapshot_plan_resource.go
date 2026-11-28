@@ -119,6 +119,7 @@ func (r *storageBoxSnapshotPlanResource) Create(ctx context.Context, req resourc
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, snapshotPlanIdentity{StorageBoxID: plan.StorageBoxID}, &resp.Diagnostics)
 }
 
 func (r *storageBoxSnapshotPlanResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -139,6 +140,7 @@ func (r *storageBoxSnapshotPlanResource) Read(ctx context.Context, req resource.
 	}
 	setSnapshotPlanResourceModel(&state, boxID, got)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	setIdentity(ctx, resp.Identity, snapshotPlanIdentity{StorageBoxID: state.StorageBoxID}, &resp.Diagnostics)
 }
 
 func (r *storageBoxSnapshotPlanResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -151,6 +153,7 @@ func (r *storageBoxSnapshotPlanResource) Update(ctx context.Context, req resourc
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, snapshotPlanIdentity{StorageBoxID: plan.StorageBoxID}, &resp.Diagnostics)
 }
 
 func (r *storageBoxSnapshotPlanResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -167,6 +170,15 @@ func (r *storageBoxSnapshotPlanResource) Delete(ctx context.Context, req resourc
 }
 
 func (r *storageBoxSnapshotPlanResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import by identity block: the identity carries the typed key.
+	if req.ID == "" {
+		var id snapshotPlanIdentity
+		resp.Diagnostics.Append(req.Identity.Get(ctx, &id)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("storagebox_id"), id.StorageBoxID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"),
+			types.StringValue(strconv.FormatInt(id.StorageBoxID.ValueInt64(), 10)))...)
+		return
+	}
 	n, err := strconv.ParseInt(req.ID, 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError("invalid import id", "expected the Storage Box ID as an integer")

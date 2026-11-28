@@ -17,7 +17,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
 var testAccProviders = map[string]func() (tfprotov6.ProviderServer, error){
@@ -29,6 +31,34 @@ func replaced(addr string) resource.ConfigPlanChecks {
 	return resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
 		plancheck.ExpectResourceAction(addr, plancheck.ResourceActionDestroyBeforeCreate),
 	}}
+}
+
+// identityMatches asserts that the resource identity is set and that each
+// identity attribute equals the state attribute of the same name.
+func identityMatches(addr string, attrs ...string) []statecheck.StateCheck {
+	checks := make([]statecheck.StateCheck, len(attrs))
+	for i, a := range attrs {
+		checks[i] = statecheck.ExpectIdentityValueMatchesState(addr, tfjsonpath.New(a))
+	}
+	return checks
+}
+
+// updatedInPlace asserts that an import plan updates the resource in place.
+func updatedInPlace(addr string) resource.ImportPlanChecks {
+	return resource.ImportPlanChecks{PreApply: []plancheck.PlanCheck{
+		plancheck.ExpectResourceAction(addr, plancheck.ResourceActionUpdate),
+	}}
+}
+
+// importByIdentity imports the resource with an `import { identity = ... }`
+// block built from its stored identity. The import plan must be a no-op, so
+// this also proves the imported state matches the configuration.
+func importByIdentity(addr string) resource.TestStep {
+	return resource.TestStep{
+		ResourceName:    addr,
+		ImportState:     true,
+		ImportStateKind: resource.ImportBlockWithResourceIdentity,
+	}
 }
 
 // checkFake runs fn against the fake's state under its lock.
@@ -61,7 +91,8 @@ resource "hrobot_ssh_key" "test" {
 		}),
 		Steps: []resource.TestStep{
 			{
-				Config: cfg("deploy"),
+				Config:            cfg("deploy"),
+				ConfigStateChecks: identityMatches("hrobot_ssh_key.test", "fingerprint"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("hrobot_ssh_key.test", "name", "deploy"),
 					resource.TestCheckResourceAttrPair("hrobot_ssh_key.test", "id", "hrobot_ssh_key.test", "fingerprint"),
@@ -80,6 +111,15 @@ resource "hrobot_ssh_key" "test" {
 				ImportStateVerify: true,
 				// Import reads the key as the API stores it, without the newline.
 				ImportStateVerifyIgnore: []string{"public_key"},
+			},
+			{
+				// The API stores the key without the newline `file()` adds:
+				// importing plans an in-place update, never a replacement.
+				ResourceName:       "hrobot_ssh_key.test",
+				ImportState:        true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+				ExpectNonEmptyPlan: true,
+				ImportPlanChecks:   updatedInPlace("hrobot_ssh_key.test"),
 			},
 		},
 	})
@@ -104,9 +144,14 @@ resource "hrobot_rdns" "test" {
 			return nil
 		}),
 		Steps: []resource.TestStep{
-			{Config: cfg("host.example.com"), Check: resource.TestCheckResourceAttr("hrobot_rdns.test", "ptr", "host.example.com")},
+			{
+				Config:            cfg("host.example.com"),
+				ConfigStateChecks: identityMatches("hrobot_rdns.test", "ip"),
+				Check:             resource.TestCheckResourceAttr("hrobot_rdns.test", "ptr", "host.example.com"),
+			},
 			{Config: cfg("other.example.com"), Check: resource.TestCheckResourceAttr("hrobot_rdns.test", "ptr", "other.example.com")},
 			{ResourceName: "hrobot_rdns.test", ImportState: true, ImportStateVerify: true},
+			importByIdentity("hrobot_rdns.test"),
 		},
 	})
 }
@@ -132,7 +177,8 @@ resource "hrobot_failover_ip" "test" {
 		}),
 		Steps: []resource.TestStep{
 			{
-				Config: cfg("192.0.2.1"),
+				Config:            cfg("192.0.2.1"),
+				ConfigStateChecks: identityMatches("hrobot_failover_ip.test", "ip"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("hrobot_failover_ip.test", "active_server_ip", "192.0.2.1"),
 					resource.TestCheckResourceAttr("hrobot_failover_ip.test", "server_number", "1001"),
@@ -140,6 +186,7 @@ resource "hrobot_failover_ip" "test" {
 			},
 			{Config: cfg("192.0.2.2"), Check: resource.TestCheckResourceAttr("hrobot_failover_ip.test", "active_server_ip", "192.0.2.2")},
 			{ResourceName: "hrobot_failover_ip.test", ImportState: true, ImportStateVerify: true},
+			importByIdentity("hrobot_failover_ip.test"),
 		},
 	})
 }
@@ -174,7 +221,8 @@ resource "hrobot_firewall" "test" {
 		ProtoV6ProviderFactories: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: cfg(1001),
+				Config:            cfg(1001),
+				ConfigStateChecks: identityMatches("hrobot_firewall.test", "server_number"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("hrobot_firewall.test", "id", "1001"),
 					resource.TestCheckResourceAttr("hrobot_firewall.test", "output_rule.#", "1"),
@@ -202,6 +250,15 @@ resource "hrobot_firewall" "test" {
 				ImportStateVerify: true,
 				// Without prior state, import sees the expanded output rules.
 				ImportStateVerifyIgnore: []string{"output_rule"},
+			},
+			{
+				// Import sees the expanded output rules, so it plans an
+				// in-place update that re-applies the equivalent rules.
+				ResourceName:       "hrobot_firewall.test",
+				ImportState:        true,
+				ImportStateKind:    resource.ImportBlockWithResourceIdentity,
+				ExpectNonEmptyPlan: true,
+				ImportPlanChecks:   updatedInPlace("hrobot_firewall.test"),
 			},
 			{
 				// The server is cancelled: the firewall drops out of state.
@@ -261,7 +318,8 @@ func TestAccVSwitch(t *testing.T) {
 				ExpectError: regexp.MustCompile(`must be between 4000 and 4091`),
 			},
 			{
-				Config: vswitchConfig(f, "backend", 4010, "[1001, 1002]"),
+				Config:            vswitchConfig(f, "backend", 4010, "[1001, 1002]"),
+				ConfigStateChecks: identityMatches("hrobot_vswitch.test", "id"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("hrobot_vswitch.test", "server_numbers.#", "2"),
 					resource.TestCheckResourceAttr("hrobot_vswitch.test", "cancellation_date", "now"),
@@ -279,11 +337,11 @@ func TestAccVSwitch(t *testing.T) {
 				}),
 			},
 			{
-				ResourceName:            "hrobot_vswitch.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cancellation_date"},
+				ResourceName:      "hrobot_vswitch.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
+			importByIdentity("hrobot_vswitch.test"),
 		},
 	})
 }
@@ -340,7 +398,8 @@ func TestAccStorageBoxSubAccount(t *testing.T) {
 		}),
 		Steps: []resource.TestStep{
 			{
-				Config: subAccountConfig(f, `  comment = "nightly"`),
+				Config:            subAccountConfig(f, `  comment = "nightly"`),
+				ConfigStateChecks: identityMatches(addr, "storagebox_id", "username"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(addr, "id", "4242/u4242-sub1"),
 					resource.TestCheckResourceAttr(addr, "password", "generated-secret"),
@@ -354,6 +413,7 @@ func TestAccStorageBoxSubAccount(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password"},
 			},
+			importByIdentity(addr),
 			{
 				// Removing the comment clears it.
 				Config: subAccountConfig(f, ""),
@@ -433,13 +493,15 @@ func TestAccStorageBoxSnapshot(t *testing.T) {
 		}),
 		Steps: []resource.TestStep{
 			{
-				Config: snapshotConfig(f, "before upgrade"),
+				Config:            snapshotConfig(f, "before upgrade"),
+				ConfigStateChecks: identityMatches(addr, "storagebox_id", "name"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(addr, "comment", "before upgrade"),
 					resource.TestCheckResourceAttr(addr, "automatic", "false"),
 				),
 			},
 			{ResourceName: addr, ImportState: true, ImportStateVerify: true},
+			importByIdentity(addr),
 			{Config: snapshotConfig(f, ""), Check: resource.TestCheckResourceAttr(addr, "comment", "")},
 		},
 	})
@@ -501,7 +563,8 @@ resource "hrobot_storagebox_snapshot_plan" "test" {
 				ExpectError: regexp.MustCompile(`must be between 0 and 23`),
 			},
 			{
-				Config: cfg("  minute = 0\n  hour = 3"),
+				Config:            cfg("  minute = 0\n  hour = 3"),
+				ConfigStateChecks: identityMatches(addr, "storagebox_id"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(addr, "status", "enabled"),
 					resource.TestCheckResourceAttr(addr, "hour", "3"),
@@ -515,6 +578,7 @@ resource "hrobot_storagebox_snapshot_plan" "test" {
 				),
 			},
 			{ResourceName: addr, ImportState: true, ImportStateVerify: true},
+			importByIdentity(addr),
 		},
 	})
 }

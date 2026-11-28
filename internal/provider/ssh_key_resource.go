@@ -63,9 +63,13 @@ func (r *sshKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Description: "Key name. Can be changed in place.",
 			},
 			"public_key": schema.StringAttribute{
-				Required:      true,
-				Description:   "The public key material (e.g. `ssh-ed25519 AAAA...`). Changing it replaces the key.",
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				Required:    true,
+				Description: "The public key material (e.g. `ssh-ed25519 AAAA...`). Changing it replaces the key; a change in surrounding whitespace only (such as the trailing newline from `file()`) does not.",
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplaceIf(
+					publicKeyMaterialChanged,
+					"Replace the key when its material changes, ignoring surrounding whitespace.",
+					"Replace the key when its material changes, ignoring surrounding whitespace.",
+				)},
 			},
 			"type":       schema.StringAttribute{Computed: true, Description: "Key algorithm (e.g. ED25519, RSA)."},
 			"size":       schema.Int64Attribute{Computed: true, Description: "Key size in bits."},
@@ -91,6 +95,7 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	setSSHKeyResourceModel(&plan, key)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, sshKeyIdentityOf(&plan), &resp.Diagnostics)
 }
 
 func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -110,6 +115,7 @@ func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	setSSHKeyResourceModel(&state, key)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	setIdentity(ctx, resp.Identity, sshKeyIdentityOf(&state), &resp.Diagnostics)
 }
 
 func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -119,13 +125,22 @@ func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	key, err := r.client.Key.Rename(ctx, state.Fingerprint.ValueString(), plan.Name.ValueString())
+	// Only the name can change in place; a whitespace-only public_key change
+	// (e.g. after an import) needs no API call beyond the re-read.
+	var key *hrobot.SSHKey
+	var err error
+	if plan.Name.Equal(state.Name) {
+		key, err = r.client.Key.Get(ctx, state.Fingerprint.ValueString())
+	} else {
+		key, err = r.client.Key.Rename(ctx, state.Fingerprint.ValueString(), plan.Name.ValueString())
+	}
 	if err != nil {
-		resp.Diagnostics.AddError("hrobot ssh key rename failed", err.Error())
+		resp.Diagnostics.AddError("hrobot ssh key update failed", err.Error())
 		return
 	}
 	setSSHKeyResourceModel(&plan, key)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, sshKeyIdentityOf(&plan), &resp.Diagnostics)
 }
 
 func (r *sshKeyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -140,6 +155,14 @@ func (r *sshKeyResource) Delete(ctx context.Context, req resource.DeleteRequest,
 }
 
 func (r *sshKeyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import by identity block: the identity carries the typed key.
+	if req.ID == "" {
+		var id sshKeyIdentity
+		resp.Diagnostics.Append(req.Identity.Get(ctx, &id)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("fingerprint"), id.Fingerprint)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id.Fingerprint)...)
+		return
+	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("fingerprint"), req.ID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
@@ -159,4 +182,12 @@ func setSSHKeyResourceModel(m *sshKeyResourceModel, k *hrobot.SSHKey) {
 	m.Type = types.StringValue(k.Type)
 	m.Size = types.Int64Value(int64(k.Size))
 	m.CreatedAt = types.StringValue(k.CreatedAt.Format(time.RFC3339))
+}
+
+// publicKeyMaterialChanged requires replacement only when the key itself
+// changes. The API stores the key trimmed, so after an import the state lacks
+// the trailing newline that `file("id.pub")` yields; that alone must not
+// destroy and re-create the key.
+func publicKeyMaterialChanged(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+	resp.RequiresReplace = strings.TrimSpace(req.StateValue.ValueString()) != strings.TrimSpace(req.PlanValue.ValueString())
 }

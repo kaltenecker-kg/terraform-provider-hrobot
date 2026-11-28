@@ -91,6 +91,7 @@ func (r *failoverIPResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, ipIdentity{IP: plan.IP}, &resp.Diagnostics)
 }
 
 func (r *failoverIPResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -110,6 +111,7 @@ func (r *failoverIPResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 	setFailoverResourceModel(&state, fo)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	setIdentity(ctx, resp.Identity, ipIdentity{IP: state.IP}, &resp.Diagnostics)
 }
 
 func (r *failoverIPResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -122,6 +124,7 @@ func (r *failoverIPResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, ipIdentity{IP: plan.IP}, &resp.Diagnostics)
 }
 
 func (r *failoverIPResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -136,6 +139,14 @@ func (r *failoverIPResource) Delete(ctx context.Context, req resource.DeleteRequ
 }
 
 func (r *failoverIPResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import by identity block: the identity carries the typed key.
+	if req.ID == "" {
+		var id ipIdentity
+		resp.Diagnostics.Append(req.Identity.Get(ctx, &id)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("ip"), id.IP)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id.IP)...)
+		return
+	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("ip"), req.ID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }

@@ -108,6 +108,7 @@ func (r *storageBoxSnapshotResource) Create(ctx context.Context, req resource.Cr
 	partial := plan
 	setSnapshotResourceModel(&partial, boxID, snap)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &partial)...)
+	setIdentity(ctx, resp.Identity, snapshotIdentityOf(&partial), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -122,6 +123,7 @@ func (r *storageBoxSnapshotResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, snapshotIdentityOf(&plan), &resp.Diagnostics)
 }
 
 func (r *storageBoxSnapshotResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -146,6 +148,7 @@ func (r *storageBoxSnapshotResource) Read(ctx context.Context, req resource.Read
 	}
 	setSnapshotResourceModel(&state, boxID, snap)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	setIdentity(ctx, resp.Identity, snapshotIdentityOf(&state), &resp.Diagnostics)
 }
 
 func (r *storageBoxSnapshotResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -171,6 +174,7 @@ func (r *storageBoxSnapshotResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, snapshotIdentityOf(&plan), &resp.Diagnostics)
 }
 
 func (r *storageBoxSnapshotResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -186,6 +190,16 @@ func (r *storageBoxSnapshotResource) Delete(ctx context.Context, req resource.De
 }
 
 func (r *storageBoxSnapshotResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import by identity block: the identity carries the typed key.
+	if req.ID == "" {
+		var id snapshotIdentity
+		resp.Diagnostics.Append(req.Identity.Get(ctx, &id)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("storagebox_id"), id.StorageBoxID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), id.Name)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"),
+			types.StringValue(fmt.Sprintf("%d/%s", id.StorageBoxID.ValueInt64(), id.Name.ValueString())))...)
+		return
+	}
 	boxID, name, ok := splitStorageBoxChildID(req.ID)
 	if !ok {
 		resp.Diagnostics.AddError("invalid import id", "expected `<storagebox_id>/<snapshot_name>`")
