@@ -13,6 +13,11 @@ updates:
       time: "06:00"
       timezone: Europe/Berlin
     labels: ["dependencies"]
+    # Cooling-off period before a new release is proposed, so a release that
+    # is yanked or found malicious within days never reaches a PR. Security
+    # updates bypass the cooldown.
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore(deps)"
     # Include `// indirect` requirements so security fixes deep in the
@@ -34,6 +39,11 @@ updates:
       time: "06:00"
       timezone: Europe/Berlin
     labels: ["dependencies"]
+    # Cooling-off period before a new release is proposed, so a release that
+    # is yanked or found malicious within days never reaches a PR. Security
+    # updates bypass the cooldown.
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore(ci)"
     groups:
@@ -45,6 +55,11 @@ updates:
     schedule:
       interval: monthly
     labels: ["dependencies"]
+    # Cooling-off period before a new release is proposed, so a release that
+    # is yanked or found malicious within days never reaches a PR. Security
+    # updates bypass the cooldown.
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore(deps)"
     groups:

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+DEPENDENCIES:
+
+- Building from source now requires Go 1.27 (was 1.26), because `hrobot-go` v2.5.0 requires it. Release binaries
+  are unaffected
+- Bump `hrobot-go` from v2.4.0 to v2.5.0 (Go 1.27 and dependency updates, no API changes)
+- Bump `govulncheck` to v1.10.0 and indirect `golang.org/x/net` (v0.63.0), `golang.org/x/tools` (v0.53.0), and
+  `golang.org/x/telemetry`
+
 ## 1.3.0 - 2026-11-11
 
 DEPRECATIONS:

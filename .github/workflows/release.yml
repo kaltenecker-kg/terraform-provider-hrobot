@@ -12,7 +12,10 @@ permissions:
 
 jobs:
   goreleaser:
-    runs-on: ubuntu-latest
+    # Pinned OS release (ubuntu-latest moves to the next LTS unannounced).
+    # Dependabot cannot bump runner labels; move it by hand before GitHub
+    # retires the image.
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     # Runs under the protected `release` environment.
     environment: release
