@@ -1,10 +1,8 @@
 package provider
 
 import (
-	"errors"
 	"fmt"
 	"net"
-	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -12,11 +10,22 @@ import (
 	"github.com/kaltenecker-kg/hrobot-go/v2"
 )
 
-// isNotFound reports whether err is an hrobot API error with HTTP status 404,
-// so Read can drop a resource that was deleted outside of Terraform.
+// isNotFound reports whether err means the object no longer exists, so Read
+// can drop a resource that was deleted outside of Terraform. It defers to the
+// library, which also recognises the per-resource NOT_FOUND codes.
 func isNotFound(err error) bool {
-	var e *hrobot.Error
-	return errors.As(err, &e) && e.Status == http.StatusNotFound
+	return hrobot.IsNotFoundError(err)
+}
+
+// optStringKeepEmpty maps an optional API string to state like optString, but
+// keeps a configured empty string: the API reports "" and null identically, so
+// returning null for a configured "" would make Terraform reject the apply as
+// inconsistent with the plan.
+func optStringKeepEmpty(prior types.String, api string) types.String {
+	if api == "" && !prior.IsNull() && !prior.IsUnknown() && prior.ValueString() == "" {
+		return prior
+	}
+	return optString(api)
 }
 
 // strPtr returns a pointer to the string value, or nil when the value is null or

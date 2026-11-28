@@ -103,6 +103,14 @@ func (r *storageBoxSnapshotResource) Create(ctx context.Context, req resource.Cr
 		resp.Diagnostics.AddError("hrobot storagebox snapshot create failed", err.Error())
 		return
 	}
+	// Save the snapshot before setting its comment, so a failure there leaves
+	// a tainted resource instead of an untracked snapshot.
+	partial := plan
+	setSnapshotResourceModel(&partial, boxID, snap)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &partial)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if c := strPtr(plan.Comment); c != nil {
 		if err := r.client.StorageBox.SetSnapshotComment(ctx, boxID, snap.Name, *c); err != nil {
 			resp.Diagnostics.AddError("hrobot storagebox snapshot comment failed", err.Error())
@@ -204,7 +212,7 @@ func setSnapshotResourceModel(m *storageBoxSnapshotResourceModel, boxID int, s *
 	m.ID = types.StringValue(fmt.Sprintf("%d/%s", boxID, s.Name))
 	m.StorageBoxID = types.Int64Value(int64(boxID))
 	m.Name = types.StringValue(s.Name)
-	m.Comment = optString(s.Comment)
+	m.Comment = optStringKeepEmpty(m.Comment, s.Comment)
 	m.Timestamp = types.StringValue(s.Timestamp)
 	m.Size = types.Int64Value(int64(s.Size))
 	m.FilesystemSize = types.Int64Value(int64(s.FilesystemSize))

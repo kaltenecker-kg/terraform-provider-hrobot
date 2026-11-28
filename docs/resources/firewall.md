@@ -41,7 +41,7 @@ resource "hrobot_firewall" "example" {
 
 ### Required
 
-- `server_number` (Number) Server number to attach the firewall configuration to.
+- `server_number` (Number) Server number to attach the firewall configuration to. Changing it replaces the resource, which resets the firewall of the previous server.
 - `status` (String) active or disabled.
 
 ### Optional

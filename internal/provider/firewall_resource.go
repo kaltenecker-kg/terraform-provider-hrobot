@@ -2,16 +2,19 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -61,15 +64,23 @@ func (r *firewallResource) Metadata(_ context.Context, req resource.MetadataRequ
 
 func (r *firewallResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	ruleAttrs := map[string]schema.Attribute{
-		"name":       schema.StringAttribute{Optional: true, Description: "Rule name."},
-		"ip_version": schema.StringAttribute{Optional: true, Description: "ipv4 or ipv6. Required for input rules; leave empty for output rules to apply to both."},
-		"action":     schema.StringAttribute{Required: true, Description: "accept or discard."},
-		"protocol":   schema.StringAttribute{Optional: true, Description: "tcp, udp, icmp, gre, ipip, ah, esp, ipencap."},
-		"src_ip":     schema.StringAttribute{Optional: true, Description: "Source CIDR."},
-		"dst_ip":     schema.StringAttribute{Optional: true, Description: "Destination CIDR."},
-		"src_port":   schema.StringAttribute{Optional: true, Description: "Source port or range (e.g. 1024-65535)."},
-		"dst_port":   schema.StringAttribute{Optional: true, Description: "Destination port or range."},
-		"tcp_flags":  schema.StringAttribute{Optional: true, Description: "TCP flags expression (e.g. syn|fin)."},
+		"name": schema.StringAttribute{Optional: true, Description: "Rule name."},
+		"ip_version": schema.StringAttribute{
+			Optional:    true,
+			Description: "ipv4 or ipv6. Required for input rules; leave empty for output rules to apply to both.",
+			Validators:  []validator.String{stringvalidator.OneOf(string(hrobot.IPv4), string(hrobot.IPv6))},
+		},
+		"action": schema.StringAttribute{
+			Required:    true,
+			Description: "accept or discard.",
+			Validators:  []validator.String{stringvalidator.OneOf(string(hrobot.ActionAccept), string(hrobot.ActionDiscard))},
+		},
+		"protocol":  schema.StringAttribute{Optional: true, Description: "tcp, udp, icmp, gre, ipip, ah, esp, ipencap."},
+		"src_ip":    schema.StringAttribute{Optional: true, Description: "Source CIDR."},
+		"dst_ip":    schema.StringAttribute{Optional: true, Description: "Destination CIDR."},
+		"src_port":  schema.StringAttribute{Optional: true, Description: "Source port or range (e.g. 1024-65535)."},
+		"dst_port":  schema.StringAttribute{Optional: true, Description: "Destination port or range."},
+		"tcp_flags": schema.StringAttribute{Optional: true, Description: "TCP flags expression (e.g. syn|fin)."},
 	}
 
 	resp.Schema = schema.Schema{
@@ -82,11 +93,15 @@ func (r *firewallResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"server_number": schema.Int64Attribute{
 				Required:    true,
-				Description: "Server number to attach the firewall configuration to.",
+				Description: "Server number to attach the firewall configuration to. Changing it replaces the resource, which resets the firewall of the previous server.",
+				// In-place would configure the new server and leave the old
+				// server's rules behind, no longer tracked by Terraform.
+				PlanModifiers: []planmodifier.Int64{int64planmodifier.RequiresReplace()},
 			},
 			"status": schema.StringAttribute{
 				Required:    true,
 				Description: "active or disabled.",
+				Validators:  []validator.String{stringvalidator.OneOf(string(hrobot.FirewallStatusActive), string(hrobot.FirewallStatusDisabled))},
 			},
 			"filter_ipv6": schema.BoolAttribute{
 				Optional: true, Computed: true,
@@ -106,6 +121,7 @@ func (r *firewallResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Optional:     true,
 				Description:  "Inbound rules, evaluated top to bottom. Hetzner enforces a maximum of 10.",
 				NestedObject: schema.NestedAttributeObject{Attributes: ruleAttrs},
+				Validators:   []validator.List{listvalidator.SizeAtMost(10)},
 			},
 			"output_rule": schema.ListNestedAttribute{
 				Optional:     true,
@@ -117,15 +133,7 @@ func (r *firewallResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 }
 
 func (r *firewallResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-	c, ok := req.ProviderData.(*hrobot.Client)
-	if !ok {
-		resp.Diagnostics.AddError("unexpected provider data type", fmt.Sprintf("got %T", req.ProviderData))
-		return
-	}
-	r.client = c
+	r.client = configureClient(req.ProviderData, &resp.Diagnostics)
 }
 
 func (r *firewallResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -146,6 +154,11 @@ func (r *firewallResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	cfg, err := r.client.Firewall.Get(ctx, hrobot.ServerID(state.ServerNumber.ValueInt64()))
 	if err != nil {
+		// A cancelled server takes its firewall with it.
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("hrobot firewall read failed", err.Error())
 		return
 	}

@@ -148,7 +148,14 @@ func setSSHKeyResourceModel(m *sshKeyResourceModel, k *hrobot.SSHKey) {
 	m.ID = types.StringValue(k.Fingerprint)
 	m.Fingerprint = types.StringValue(k.Fingerprint)
 	m.Name = types.StringValue(k.Name)
-	m.PublicKey = types.StringValue(strings.TrimSpace(k.Data))
+	// Keep the configured text when it differs from the stored key only in
+	// surrounding whitespace: `file("id.pub")` carries a trailing newline
+	// that the API drops, and returning the trimmed form would fail the apply
+	// as inconsistent (and then force a replacement on every plan).
+	if m.PublicKey.IsNull() || m.PublicKey.IsUnknown() ||
+		strings.TrimSpace(m.PublicKey.ValueString()) != strings.TrimSpace(k.Data) {
+		m.PublicKey = types.StringValue(strings.TrimSpace(k.Data))
+	}
 	m.Type = types.StringValue(k.Type)
 	m.Size = types.Int64Value(int64(k.Size))
 	m.CreatedAt = types.StringValue(k.CreatedAt.Format(time.RFC3339))

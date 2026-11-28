@@ -104,6 +104,7 @@ func (r *storageBoxSubAccountResource) Configure(_ context.Context, req resource
 }
 
 func subAccountInput(m *storageBoxSubAccountResourceModel) hrobot.StorageBoxSubAccountInput {
+	comment := m.Comment.ValueString()
 	return hrobot.StorageBoxSubAccountInput{
 		HomeDirectory:        strPtr(m.HomeDirectory),
 		Samba:                boolPtr(m.Samba),
@@ -111,7 +112,9 @@ func subAccountInput(m *storageBoxSubAccountResourceModel) hrobot.StorageBoxSubA
 		ExternalReachability: boolPtr(m.ExternalReachability),
 		Webdav:               boolPtr(m.Webdav),
 		ReadOnly:             boolPtr(m.ReadOnly),
-		Comment:              strPtr(m.Comment),
+		// Always sent: an omitted comment leaves the old one in place, so
+		// removing `comment` from the config would never clear it.
+		Comment: &comment,
 	}
 }
 
@@ -141,6 +144,26 @@ func (r *storageBoxSubAccountResource) Create(ctx context.Context, req resource.
 		resp.Diagnostics.AddError("hrobot storagebox subaccount create failed", err.Error())
 		return
 	}
+	// The password is returned only by this call. Save the sub-account
+	// before re-reading it, so a failed re-read leaves a tainted resource
+	// that still holds the password instead of an orphan.
+	partial := plan
+	partial.ID = types.StringValue(fmt.Sprintf("%d/%s", boxID, created.Username))
+	partial.Username = types.StringValue(created.Username)
+	partial.Password = types.StringValue(created.Password)
+	partial.AccountID = types.StringValue(created.AccountID)
+	partial.Server = types.StringValue(created.Server)
+	partial.CreateTime = types.StringNull()
+	for _, b := range []*types.Bool{&partial.Samba, &partial.SSH, &partial.ExternalReachability, &partial.Webdav, &partial.ReadOnly} {
+		if b.IsUnknown() {
+			*b = types.BoolNull()
+		}
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &partial)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	sub, err := r.find(ctx, boxID, created.Username)
 	if err != nil {
 		resp.Diagnostics.AddError("hrobot storagebox subaccount re-read failed", err.Error())
@@ -195,8 +218,13 @@ func (r *storageBoxSubAccountResource) Update(ctx context.Context, req resource.
 		return
 	}
 	sub, err := r.find(ctx, boxID, username)
-	if err != nil || sub == nil {
-		resp.Diagnostics.AddError("hrobot storagebox subaccount re-read failed", fmt.Sprintf("%v", err))
+	if err != nil {
+		resp.Diagnostics.AddError("hrobot storagebox subaccount re-read failed", err.Error())
+		return
+	}
+	if sub == nil {
+		resp.Diagnostics.AddError("hrobot storagebox subaccount re-read failed",
+			fmt.Sprintf("sub-account %q is no longer listed on storage box %d", username, boxID))
 		return
 	}
 	setSubAccountResourceModel(&plan, boxID, sub)
@@ -237,7 +265,7 @@ func setSubAccountResourceModel(m *storageBoxSubAccountResourceModel, boxID int,
 	m.ExternalReachability = types.BoolValue(s.ExternalReachability)
 	m.Webdav = types.BoolValue(s.Webdav)
 	m.ReadOnly = types.BoolValue(s.ReadOnly)
-	m.Comment = optString(s.Comment)
+	m.Comment = optStringKeepEmpty(m.Comment, s.Comment)
 	m.AccountID = types.StringValue(s.AccountID)
 	m.Server = types.StringValue(s.Server)
 	m.CreateTime = types.StringValue(s.CreateTime)
