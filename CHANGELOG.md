@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.4.0 - 2026-11-28
+
 FEATURES:
 
 - **Resource identity** for all eight resources (Terraform 1.12+ and OpenTofu 1.12+): import with an
