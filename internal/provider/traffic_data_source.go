@@ -3,9 +3,11 @@ package provider
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/kaltenecker-kg/hrobot-go/v2"
@@ -53,7 +55,13 @@ func (d *trafficDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 	resp.Schema = schema.Schema{
 		Description: "Query traffic statistics for an IP address over a time range.",
 		Attributes: map[string]schema.Attribute{
-			"type": schema.StringAttribute{Required: true, Description: "Aggregation granularity: day, month, or year."},
+			"type": schema.StringAttribute{
+				Required:    true,
+				Description: "Aggregation granularity: day, month, or year.",
+				Validators: []validator.String{stringvalidator.OneOf(
+					string(hrobot.TrafficTypeDay), string(hrobot.TrafficTypeMonth), string(hrobot.TrafficTypeYear),
+				)},
+			},
 			"from": schema.StringAttribute{Required: true, Description: "Start of the range (e.g. 2026-07-01T00 for day, 2026-07 for month, 2026 for year)."},
 			"to":   schema.StringAttribute{Required: true, Description: "End of the range, same format as `from`."},
 			"ip":   schema.StringAttribute{Required: true, Description: "IP address to report traffic for."},

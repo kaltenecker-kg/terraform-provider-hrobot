@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+BUG FIXES:
+
+- **resource/hrobot_ssh_key**: `public_key` read with `file()` (trailing newline) no longer fails the apply as
+  inconsistent or forces a replacement on every plan
+- **resource/hrobot_firewall**: changing `server_number` now replaces the resource instead of configuring the new
+  server and leaving the old server's rules untracked
+- **resource/hrobot_firewall**: a firewall whose server no longer exists is removed from state instead of failing
+  every refresh
+- **resource/hrobot_storagebox_subaccount**: removing `comment` now clears it instead of failing the apply
+- **resource/hrobot_storagebox_subaccount**, **resource/hrobot_storagebox_snapshot**: `comment = ""` no longer
+  fails the apply as inconsistent
+- **resource/hrobot_vswitch**, **resource/hrobot_storagebox_subaccount**, **resource/hrobot_storagebox_snapshot**:
+  a create that fails after the object exists saves it as tainted instead of orphaning it. For sub-accounts this
+  keeps the one-time password in state
+- Not-found detection uses `hrobot.IsNotFoundError`, which also recognises per-resource codes such as
+  `SERVER_NOT_FOUND`
+
+ENHANCEMENTS:
+
+- Plan-time validation for firewall `status`, rule `action` and `ip_version`, and the 10 input rule limit; vSwitch
+  `vlan` (4000-4091) and `cancellation_date`; snapshot plan `status` and schedule ranges; traffic `type`
+
 DEPENDENCIES:
 
 - Building from source now requires Go 1.27 (was 1.26), because `hrobot-go` v2.5.0 requires it. Release binaries

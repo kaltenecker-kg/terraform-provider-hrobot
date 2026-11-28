@@ -4,6 +4,8 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -12,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/kaltenecker-kg/hrobot-go/v2"
@@ -67,12 +70,13 @@ func (r *storageBoxSnapshotPlanResource) Schema(_ context.Context, _ resource.Sc
 				Computed:    true,
 				Default:     stringdefault.StaticString("enabled"),
 				Description: "Plan status: `enabled` or `disabled`.",
+				Validators:  []validator.String{stringvalidator.OneOf("enabled", "disabled")},
 			},
-			"minute":        schema.Int64Attribute{Optional: true, Description: "Minute (0-59). Unset = every minute."},
-			"hour":          schema.Int64Attribute{Optional: true, Description: "Hour (0-23). Unset = every hour."},
-			"day_of_week":   schema.Int64Attribute{Optional: true, Description: "Day of week (1-7). Unset = every day."},
-			"day_of_month":  schema.Int64Attribute{Optional: true, Description: "Day of month (1-31). Unset = every day."},
-			"month":         schema.Int64Attribute{Optional: true, Description: "Month (1-12). Unset = every month."},
+			"minute":        schema.Int64Attribute{Optional: true, Description: "Minute (0-59). Unset = every minute.", Validators: []validator.Int64{int64validator.Between(0, 59)}},
+			"hour":          schema.Int64Attribute{Optional: true, Description: "Hour (0-23). Unset = every hour.", Validators: []validator.Int64{int64validator.Between(0, 23)}},
+			"day_of_week":   schema.Int64Attribute{Optional: true, Description: "Day of week (1-7). Unset = every day.", Validators: []validator.Int64{int64validator.Between(1, 7)}},
+			"day_of_month":  schema.Int64Attribute{Optional: true, Description: "Day of month (1-31). Unset = every day.", Validators: []validator.Int64{int64validator.Between(1, 31)}},
+			"month":         schema.Int64Attribute{Optional: true, Description: "Month (1-12). Unset = every month.", Validators: []validator.Int64{int64validator.Between(1, 12)}},
 			"max_snapshots": schema.Int64Attribute{Required: true, Description: "Maximum number of automatic snapshots to retain."},
 		},
 	}

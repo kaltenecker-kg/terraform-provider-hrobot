@@ -2,8 +2,11 @@ package provider
 
 import (
 	"context"
+	"regexp"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -12,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/kaltenecker-kg/hrobot-go/v2"
@@ -62,6 +66,7 @@ func (r *vswitchResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Required:      true,
 				Description:   "VLAN ID (4000-4091). Changing it replaces the vSwitch.",
 				PlanModifiers: []planmodifier.Int64{int64planmodifier.RequiresReplace()},
+				Validators:    []validator.Int64{int64validator.Between(4000, 4091)},
 			},
 			"server_numbers": schema.SetAttribute{
 				Optional:      true,
@@ -75,6 +80,10 @@ func (r *vswitchResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Computed:    true,
 				Default:     stringdefault.StaticString("now"),
 				Description: "Cancellation date used when the vSwitch is destroyed (`now` for immediate, or `YYYY-MM-DD`).",
+				Validators: []validator.String{stringvalidator.RegexMatches(
+					regexp.MustCompile(`^(now|\d{4}-\d{2}-\d{2})$`),
+					"must be `now` or a date in YYYY-MM-DD form",
+				)},
 			},
 			"cancelled": schema.BoolAttribute{Computed: true, Description: "Whether the vSwitch is cancelled."},
 		},
@@ -98,6 +107,16 @@ func (r *vswitchResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 	id := vs.ID
+
+	// Record the vSwitch before attaching servers: if a later step fails, the
+	// resource is saved as tainted instead of being orphaned in the account
+	// (and duplicated by the next apply).
+	created := plan
+	resp.Diagnostics.Append(setVSwitchResourceModel(ctx, &created, vs)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &created)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	desired, d := setToInt64s(ctx, plan.ServerNumbers)
 	resp.Diagnostics.Append(d...)
