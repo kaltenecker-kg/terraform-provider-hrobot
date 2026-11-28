@@ -5,7 +5,7 @@ description: >-
 
   Why this exists: the Go toolchain used by CI and by the signed release build
   has drifted to a stale patch more than once (a runner-preinstalled patch that
-  lacked a crypto/tls fix; a `go 1.26.0` directive that setup-go treated as an
+  lacked a crypto/tls fix; a `go X.Y.0` directive that setup-go treated as an
   exact pin and resolved to the vulnerable initial release). Every occurrence
   surfaced only as govulncheck failing on standard-library advisories, or would
   have shipped silently in a release. This action derives the version range
@@ -22,7 +22,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        # Accept `go 1.26` and `go 1.26.0`; only the minor matters here.
+        # Accept `go 1.27` and `go 1.27.1`; only the minor matters here.
         minor="$(sed -nE 's/^go ([0-9]+\.[0-9]+)(\.[0-9]+)?[[:space:]]*$/\1/p' go.mod | head -n1)"
         if [ -z "$minor" ]; then
           echo "::error file=go.mod::could not read a 'go X.Y' directive from go.mod"
@@ -31,7 +31,7 @@ runs:
         echo "minor=$minor" >> "$GITHUB_OUTPUT"
         echo "Go minor from go.mod: $minor (requesting newest ${minor}.x patch)"
 
-    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+    - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
       with:
         # A range, deliberately not go-version-file: a three-part go directive
         # is treated by setup-go as an exact pin.

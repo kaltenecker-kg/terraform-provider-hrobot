@@ -1,14 +1,16 @@
 module github.com/kaltenecker-kg/terraform-provider-hrobot
 
-// Minimum language version. The three-part form is required by dependencies
-// and maintained by `go mod tidy`; CI derives its toolchain from it. Do not
-// edit it by hand to silence a local tool: run `task doctor` for the remedy.
-go 1.26.0
+// Minimum language version, raised to 1.27 by hrobot-go v2.5.0. It is kept by
+// `go mod tidy` (a dependency declaring a patch form such as "1.27.1" would
+// force that form; check the directive after bumping one). CI derives its
+// toolchain from it. Do not edit it by hand to silence a local tool: run
+// `task doctor` for the remedy.
+go 1.27
 
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-go v0.31.0
-	github.com/kaltenecker-kg/hrobot-go/v2 v2.4.0
+	github.com/kaltenecker-kg/hrobot-go/v2 v2.5.0
 )
 
 require (
@@ -28,13 +30,13 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/mod v0.43.0 // indirect
-	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
-	golang.org/x/telemetry v0.0.0-20261111153349-cdaf7e97dd7b // indirect
+	golang.org/x/telemetry v0.0.0-20261116191925-e77a43154acb // indirect
 	golang.org/x/text v0.44.0 // indirect
-	golang.org/x/tools v0.52.0 // indirect
-	golang.org/x/vuln v1.9.0 // indirect
+	golang.org/x/tools v0.53.0 // indirect
+	golang.org/x/vuln v1.10.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261110000943-09e21b237f2c // indirect
 	google.golang.org/grpc v1.85.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect

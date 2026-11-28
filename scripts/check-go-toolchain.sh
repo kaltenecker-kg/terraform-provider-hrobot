@@ -4,7 +4,7 @@
 # the actual remedy instead. Run by .husky/pre-commit and `task doctor`.
 #
 # The go directive is the module's minimum language version. Its three-part
-# form (e.g. `go 1.26.0`) is required by dependencies and rewritten by
+# form (e.g. `go 1.27` or `go 1.27.1`) is set by dependencies and rewritten by
 # `go mod tidy`; hand-editing it never fixes a tool that is too old and, at
 # worst, changes how CI selects its toolchain.
 set -eu
@@ -22,7 +22,7 @@ version_ge() {
 }
 
 want="$(sed -nE 's/^go ([0-9]+\.[0-9]+(\.[0-9]+)?)[[:space:]]*$/\1/p' go.mod | head -n1)"
-[ -n "$want" ] || fail "could not read the go directive from go.mod" "expected a line like 'go 1.26.0'"
+[ -n "$want" ] || fail "could not read the go directive from go.mod" "expected a line like 'go 1.27'"
 
 # 1. The local go must be able to build the module. With the default
 #    GOTOOLCHAIN=auto (or any '+auto' value) the go command downloads a newer
