@@ -125,7 +125,7 @@ func (r *firewallResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"output_rule": schema.ListNestedAttribute{
 				Optional:     true,
-				Description:  "Outbound rules, evaluated top to bottom. Hetzner may store rules without `ip_version` expanded into separate ipv4 and ipv6 entries; the provider treats that expanded form as equal to the configured rules.",
+				Description:  "Outbound rules, evaluated top to bottom. Hetzner may store rules without `ip_version` expanded into separate ipv4 and ipv6 entries; the provider treats that expanded form as equal to the configured rules. After an import the provider cannot tell which form was configured, so the first plan may show an in-place update that re-applies the equivalent rules.",
 				NestedObject: schema.NestedAttributeObject{Attributes: ruleAttrs},
 			},
 		},
@@ -142,7 +142,7 @@ func (r *firewallResource) Create(ctx context.Context, req resource.CreateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	r.apply(ctx, &plan, &resp.Diagnostics, &resp.State)
+	r.apply(ctx, &plan, &resp.Diagnostics, &resp.State, resp.Identity)
 }
 
 func (r *firewallResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -167,6 +167,7 @@ func (r *firewallResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.InputRules = inputRules
 	state.OutputRules = outputRules
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	setIdentity(ctx, resp.Identity, firewallIdentity{ServerNumber: state.ServerNumber}, &resp.Diagnostics)
 }
 
 func (r *firewallResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -175,7 +176,7 @@ func (r *firewallResource) Update(ctx context.Context, req resource.UpdateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	r.apply(ctx, &plan, &resp.Diagnostics, &resp.State)
+	r.apply(ctx, &plan, &resp.Diagnostics, &resp.State, resp.Identity)
 }
 
 func (r *firewallResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -199,6 +200,15 @@ func (r *firewallResource) Delete(ctx context.Context, req resource.DeleteReques
 }
 
 func (r *firewallResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import by identity block: the identity carries the typed key.
+	if req.ID == "" {
+		var id firewallIdentity
+		resp.Diagnostics.Append(req.Identity.Get(ctx, &id)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("server_number"), id.ServerNumber)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"),
+			types.StringValue(strconv.FormatInt(id.ServerNumber.ValueInt64(), 10)))...)
+		return
+	}
 	n, err := strconv.ParseInt(req.ID, 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError("invalid import id", "expected the server number as a positive integer")
@@ -209,7 +219,7 @@ func (r *firewallResource) ImportState(ctx context.Context, req resource.ImportS
 }
 
 // apply pushes the planned config to the API and writes the response back to state.
-func (r *firewallResource) apply(ctx context.Context, plan *firewallModel, diags *diag.Diagnostics, state *tfsdk.State) {
+func (r *firewallResource) apply(ctx context.Context, plan *firewallModel, diags *diag.Diagnostics, state *tfsdk.State, identity *tfsdk.ResourceIdentity) {
 	id := hrobot.ServerID(plan.ServerNumber.ValueInt64())
 
 	// status is Required and filter_ipv6/whitelist_hos are Computed with static
@@ -259,6 +269,7 @@ func (r *firewallResource) apply(ctx context.Context, plan *firewallModel, diags
 	plan.ID = types.StringValue(strconv.Itoa(final.ServerNumber))
 	plan.Port = types.StringValue(final.Port)
 	diags.Append(state.Set(ctx, plan)...)
+	setIdentity(ctx, identity, firewallIdentity{ServerNumber: plan.ServerNumber}, diags)
 }
 
 // reconcileRules returns the rule lists to store in state after a refresh:

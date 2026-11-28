@@ -114,6 +114,7 @@ func (r *vswitchResource) Create(ctx context.Context, req resource.CreateRequest
 	created := plan
 	resp.Diagnostics.Append(setVSwitchResourceModel(ctx, &created, vs)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &created)...)
+	setIdentity(ctx, resp.Identity, vswitchIdentity{ID: created.ID}, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -139,6 +140,7 @@ func (r *vswitchResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, vswitchIdentity{ID: plan.ID}, &resp.Diagnostics)
 }
 
 func (r *vswitchResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -157,7 +159,13 @@ func (r *vswitchResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 	resp.Diagnostics.Append(setVSwitchResourceModel(ctx, &state, vs)...)
+	// cancellation_date is Terraform-only; after an import it is unset, so
+	// fill in the schema default to keep the first plan empty.
+	if state.CancellationDate.IsNull() {
+		state.CancellationDate = types.StringValue("now")
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	setIdentity(ctx, resp.Identity, vswitchIdentity{ID: state.ID}, &resp.Diagnostics)
 }
 
 func (r *vswitchResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -211,6 +219,7 @@ func (r *vswitchResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, vswitchIdentity{ID: plan.ID}, &resp.Diagnostics)
 }
 
 func (r *vswitchResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -225,6 +234,13 @@ func (r *vswitchResource) Delete(ctx context.Context, req resource.DeleteRequest
 }
 
 func (r *vswitchResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import by identity block: the identity carries the typed key.
+	if req.ID == "" {
+		var id vswitchIdentity
+		resp.Diagnostics.Append(req.Identity.Get(ctx, &id)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id.ID)...)
+		return
+	}
 	n, err := strconv.ParseInt(req.ID, 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError("invalid import id", "expected the vSwitch ID as an integer")

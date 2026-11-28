@@ -77,6 +77,7 @@ func (r *rdnsResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	setRDNSResourceModel(&plan, entry)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, ipIdentity{IP: plan.IP}, &resp.Diagnostics)
 }
 
 func (r *rdnsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -96,6 +97,7 @@ func (r *rdnsResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 	setRDNSResourceModel(&state, entry)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	setIdentity(ctx, resp.Identity, ipIdentity{IP: state.IP}, &resp.Diagnostics)
 }
 
 func (r *rdnsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -111,6 +113,7 @@ func (r *rdnsResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 	setRDNSResourceModel(&plan, entry)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, ipIdentity{IP: plan.IP}, &resp.Diagnostics)
 }
 
 func (r *rdnsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -125,6 +128,14 @@ func (r *rdnsResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 }
 
 func (r *rdnsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import by identity block: the identity carries the typed key.
+	if req.ID == "" {
+		var id ipIdentity
+		resp.Diagnostics.Append(req.Identity.Get(ctx, &id)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("ip"), id.IP)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id.IP)...)
+		return
+	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("ip"), req.ID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }

@@ -160,6 +160,7 @@ func (r *storageBoxSubAccountResource) Create(ctx context.Context, req resource.
 		}
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &partial)...)
+	setIdentity(ctx, resp.Identity, subAccountIdentityOf(&partial), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -176,6 +177,7 @@ func (r *storageBoxSubAccountResource) Create(ctx context.Context, req resource.
 	setSubAccountResourceModel(&plan, boxID, sub)
 	plan.Password = types.StringValue(created.Password)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, subAccountIdentityOf(&plan), &resp.Diagnostics)
 }
 
 func (r *storageBoxSubAccountResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -201,6 +203,7 @@ func (r *storageBoxSubAccountResource) Read(ctx context.Context, req resource.Re
 	// Password is only returned at creation; preserve the stored value.
 	setSubAccountResourceModel(&state, boxID, sub)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	setIdentity(ctx, resp.Identity, subAccountIdentityOf(&state), &resp.Diagnostics)
 }
 
 func (r *storageBoxSubAccountResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -230,6 +233,7 @@ func (r *storageBoxSubAccountResource) Update(ctx context.Context, req resource.
 	setSubAccountResourceModel(&plan, boxID, sub)
 	plan.Password = state.Password
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	setIdentity(ctx, resp.Identity, subAccountIdentityOf(&plan), &resp.Diagnostics)
 }
 
 func (r *storageBoxSubAccountResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -245,6 +249,16 @@ func (r *storageBoxSubAccountResource) Delete(ctx context.Context, req resource.
 }
 
 func (r *storageBoxSubAccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import by identity block: the identity carries the typed key.
+	if req.ID == "" {
+		var id subAccountIdentity
+		resp.Diagnostics.Append(req.Identity.Get(ctx, &id)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("storagebox_id"), id.StorageBoxID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("username"), id.Username)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"),
+			types.StringValue(fmt.Sprintf("%d/%s", id.StorageBoxID.ValueInt64(), id.Username.ValueString())))...)
+		return
+	}
 	boxID, username, ok := splitStorageBoxChildID(req.ID)
 	if !ok {
 		resp.Diagnostics.AddError("invalid import id", "expected `<storagebox_id>/<username>`")
