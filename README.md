@@ -7,6 +7,20 @@ Terraform / OpenTofu provider for the
 and the [`hrobot-go`](https://github.com/kaltenecker-kg/hrobot-go) client
 library.
 
+## Supported versions
+
+The provider supports Terraform and OpenTofu equally and adopts only features
+that both CLIs implement. CI runs the acceptance tests on every release line
+each project still patches:
+
+| CLI       | Tested lines |
+|-----------|--------------|
+| Terraform | 1.16, 1.17   |
+| OpenTofu  | 1.12, 1.13   |
+
+It uses plugin protocol 6 and no newer CLI features, so older releases
+(Terraform 1.0+, OpenTofu 1.6+) are expected to work but are not tested.
+
 ## Configuration
 
 ```hcl
@@ -83,9 +97,16 @@ provider_installation {
 
 ```sh
 task check              # lint, vet, test, tidy-check, verify, vulncheck
+task testacc            # acceptance tests on Terraform (downloaded if not installed)
+task testacc CLI=tofu   # the same on the locally installed OpenTofu
 task docs               # regenerate docs/ from the provider schema and examples/
 task release-snapshot   # build an unpublished goreleaser snapshot
 ```
+
+The acceptance tests run real `terraform`/`tofu` plan, apply, import, and
+destroy cycles against an in-memory fake of the Robot API
+(`internal/provider/acc_fake_test.go`), so they need no Hetzner account. When
+a resource starts using another endpoint, add it to the fake.
 
 Regenerate `docs/` with `task docs` whenever a schema description or an example
 changes, and commit the result.

@@ -186,6 +186,10 @@ func (r *firewallResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	id := hrobot.ServerID(state.ServerNumber.ValueInt64())
 	if err := r.client.Firewall.Delete(ctx, id); err != nil {
+		// The server (and with it the firewall) is already gone.
+		if isNotFound(err) {
+			return
+		}
 		resp.Diagnostics.AddError("hrobot firewall delete failed", err.Error())
 		return
 	}

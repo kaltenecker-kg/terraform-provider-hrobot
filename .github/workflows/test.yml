@@ -81,3 +81,51 @@ jobs:
         # in go.sum and bumped by Dependabot; the vulnerability database is
         # still fetched fresh at run time.
         run: go tool govulncheck ./...
+
+  acceptance:
+    # Real Terraform/OpenTofu runs (plan, apply, import, destroy) against the
+    # in-memory fake Robot API in internal/provider/acc_fake_test.go. No
+    # Hetzner account or secret is involved.
+    name: Acceptance (${{ matrix.cli }} ${{ matrix.version }})
+    # Pinned OS release (ubuntu-latest moves to the next LTS unannounced).
+    # Dependabot cannot bump runner labels; move it by hand before GitHub
+    # retires the image.
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # The release lines each project still patches. The provider adopts
+        # only features both CLIs support, so both are tested on every change.
+        # Dependabot cannot track these; move them by hand when a new minor
+        # ships (newest patch of each line is installed).
+        include:
+          - { cli: terraform, version: '~1.16.0' }
+          - { cli: terraform, version: '~1.17.0' }
+          - { cli: tofu, version: '~1.12.0' }
+          - { cli: tofu, version: '~1.13.0' }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Newest patch of the go.mod minor, asserted against go.dev (see the
+      # action for why this is not a plain setup-go step).
+      - uses: ./.github/actions/setup-go
+      - if: matrix.cli == 'terraform'
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ matrix.version }}
+          # The wrapper script breaks terraform-plugin-testing's output parsing.
+          terraform_wrapper: false
+      - if: matrix.cli == 'tofu'
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: ${{ matrix.version }}
+          tofu_wrapper: false
+      - name: Acceptance tests
+        env:
+          TF_ACC: '1'
+          # OpenTofu rejects the default (legacy "-") provider namespace.
+          TF_ACC_PROVIDER_NAMESPACE: kaltenecker-kg
+        run: |
+          export TF_ACC_TERRAFORM_PATH="$(command -v "${{ matrix.cli }}")"
+          "$TF_ACC_TERRAFORM_PATH" version
+          go test -v -count=1 -timeout=10m -run '^TestAcc' ./internal/provider/

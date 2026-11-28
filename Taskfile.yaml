@@ -57,6 +57,18 @@ tasks:
     cmds:
       - go test -v -race -cover -timeout=180s ./...
 
+  testacc:
+    desc: Run the acceptance tests (real terraform/tofu runs against an in-memory fake API). CLI=tofu to use OpenTofu.
+    # Without TF_ACC_TERRAFORM_PATH, terraform-plugin-testing downloads the
+    # latest Terraform. OpenTofu needs a non-legacy provider namespace.
+    env:
+      TF_ACC: "1"
+      TF_ACC_PROVIDER_NAMESPACE: kaltenecker-kg
+    cmds:
+      - |
+        if [ -n "{{.CLI}}" ]; then export TF_ACC_TERRAFORM_PATH="$(command -v {{.CLI}})"; fi
+        go test -v -count=1 -timeout=10m -run '^TestAcc' ./internal/provider/
+
   tidy-check:
     desc: Fail if go.mod/go.sum are not tidy.
     cmds:
